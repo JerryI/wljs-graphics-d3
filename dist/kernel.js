@@ -261,7 +261,7 @@ let Plotly = false;
     
 
     if (Object.keys(options).length == 0 && args.length > 1) 
-      options = core._getRules(interpretate(args[1], {...env, hold:true}), {...env, context: g2d, hold:true});
+      options = core._getRules(interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
 
     console.log(options);
 
@@ -289,9 +289,20 @@ let Plotly = false;
 
     // append the svg object to the body of the page
     let svg = d3.select(container)
-    .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
+    .append("svg");
+
+    if ('ViewBox' in options) {
+
+      let boxsize = interpretate(options.ViewBox, env);
+      if (!(boxsize instanceof Array)) boxsize = [boxsize, boxsize*aspectratio];
+      svg.attr("viewBox", [0, 0, boxsize[0], boxsize[1]]);     
+
+    } else {
+      svg.attr("width", width + margin.left + margin.right)
+         .attr("height", height + margin.top + margin.bottom);
+    }
+    
+    svg  
     .append("g")
       .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
@@ -331,36 +342,36 @@ let Plotly = false;
     
     if (axis[1]) svg.append("g").call(d3.axisLeft(y)).call(d3.axisLeft(y));   
 
-      const envcopy = {
-        ...env,
-        context: g2d,
-        svg: svg,
-        xAxis: x,
-        yAxis: y,
-        numerical: true,
-        tostring: false,
-        color: 'black',
-        opacity: 1,
-        strokeWidth: 1.5,
-        pointSize: 0.013,
-        fill: 'none',
-        transition: {duration: 300}
-      }; 
+
+
+    //since FE object insolates env already, there is no need to make a copy
+      env.context = g2d;
+      env.svg = svg;
+      env.xAxis = x;
+      env.yAxis = y;
+      env.numerical = true;
+      env.tostring = false;
+      env.color = 'black';
+      env.opacity = 1;
+      env.strokeWidth = 1.5;
+      env.pointSize = 0.013;
+      env.fill = 'none';
+      env.transition = {duration: 300};
       
       if (options.TransitionDuration) {
-        envcopy.transition.duration = interpretate(options.TransitionDuration, env);
+        env.transition.duration = interpretate(options.TransitionDuration, env);
       }
 
-      envcopy.local.xAxis = x;
-      envcopy.local.yAxis = y;
+      env.local.xAxis = x;
+      env.local.yAxis = y;
 
-      interpretate(options.Epilog, envcopy);
-      interpretate(args[0], envcopy);
-      interpretate(options.Prolog, envcopy);
+      interpretate(options.Epilog, env);
+      interpretate(args[0], env);
+      interpretate(options.Prolog, env);
   };
 
-  g2d.Graphics.update = (args, env) => {};
-  g2d.Graphics.destroy = (args, env) => {};
+  g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
+  g2d.Graphics.destroy = (args, env) => { interpretate(args[0], {...env, context: g2d}); };
 
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
@@ -391,6 +402,12 @@ let Plotly = false;
     }
   };
 
+  g2d.RGBColor.destroy = (args, env) => {};
+  g2d.Opacity.destroy = (args, env) => {};
+  
+  g2d.PointSize.destroy = (args, env) => {};
+  g2d.AbsoluteThickness.destroy = (args, env) => {};
+
   g2d.Hue = (args, env) => {
     if (args.length == 3) {
       const color = args.map(el => 100*interpretate(el, env));
@@ -398,7 +415,9 @@ let Plotly = false;
     } else {
       console.error('g2d: Hue must have three arguments!');
     }
-  };  
+  }; 
+  
+  g2d.Hue.destroy = (args, env) => {};
 
 
   g2d.Line = async (args, env) => {
@@ -450,6 +469,8 @@ let Plotly = false;
         .x(function(d) { return env.xAxis(d[0]) })
         .y(function(d) { return env.yAxis(d[1]) });
   };
+
+  g2d.Line.destroy = (args, env) => {interpretate(args[0], env);};
 
   g2d.Line.update = async (args, env) => {
     let data = await interpretate(args[0], env);
@@ -607,6 +628,8 @@ let Plotly = false;
 
   };
 
+  g2d.Point.destroy = (args, env) => {interpretate(args[0], env);};
+
   g2d.Point.virtual = true;  
 
   g2d.EventListener = (args, env) => {
@@ -624,6 +647,8 @@ let Plotly = false;
     return interpretate(args[0], envcopy);
   };
 
+  g2d.EventListener.destroy = (args, env) => {interpretate(args[0], env);};
+
   g2d.EventListener.drag = (uid, env) => {
 
     console.log('drag event generator');
@@ -634,10 +659,14 @@ let Plotly = false;
     function dragstarted(event, d) {
       d3.select(this).raise().attr("stroke", "black");
     }
+
+    const updatePos = throttle((x,y) => {
+      server.emitt(uid, `{${x}, ${y}}`);
+    });
   
     function dragged(event, d) {
       d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
-      server.emitt(uid, `{${xAxis.invert(event.x)}, ${yAxis.invert(event.y)}}`);
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
     }
   
     function dragended(event, d) {
@@ -655,9 +684,13 @@ let Plotly = false;
     console.log('zoom event generator');
     console.log(env.local);
 
+    const updatePos = throttle(k => {
+      server.emitt(uid, `${k}`);
+    });
+
     function zoom(e) {
       console.log();
-      server.emitt(uid, `${e.transform.k}`);
+      updatePos(e.transform.k);
     }
   
     return d3.zoom()
