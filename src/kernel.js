@@ -449,12 +449,12 @@
       break;
     
       case 3:
-        env.local.nsets = data.length;
+        
 
         data.forEach((d, i)=>{
           env.svg.append("path")
-          .datum(d)
-          .attr("class", 'line-'+uid+i)
+          .datum(d).join("path")
+          .attr("class", 'line-'+uid+'-'+i)
           .attr("fill", "none")
           .attr("stroke", env.color)
           .attr("stroke-width", env.strokeWidth)
@@ -466,6 +466,8 @@
       break;
     } 
 
+    env.local.nsets = data.length;
+
     env.local.line = d3.line()
         .x(function(d) { return env.xAxis(d[0]) })
         .y(function(d) { return env.yAxis(d[1]) });
@@ -473,7 +475,13 @@
 
   g2d.Line.destroy = (args, env) => {interpretate(args[0], env)}
 
+  let interpolatePath = false;
+
+  if (!d3) d3 = await import('d3');
+
   g2d.Line.update = async (args, env) => {
+    if (!interpolatePath) interpolatePath = (await import('d3-interpolate-path')).interpolatePath;
+
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
     const y = env.yAxis;
@@ -481,30 +489,41 @@
 
     switch(arrDepth(data)) {
       case 2:
+        const current = Math.min(data.length, env.local.nsets);
+        //animate equal
+
+        //animate the rest
         env.svg.selectAll('.line-'+env.local.uid)
         .datum(data)
-        .join("path")
         .attr("class",'line-'+env.local.uid)
         .transition()
         .duration(env.transition.duration)
-        .attr("d", env.local.line);   
+        .attrTween('d', function (d) {
+          var previous = d3.select(this).attr('d');
+          var current = env.local.line(d);
+          return interpolatePath(previous, current);
+        }); 
+
       break;
     
       case 3:
         for (let i=0; i < Math.min(data.length, env.local.nsets); ++i) {
-          env.svg.selectAll('.line-'+env.local.uid+i).datum(data[i])
-          .join("path")
-          .attr("class",'line-'+env.local.uid+i)
+          console.log('upd 1');
+          env.svg.selectAll('.line-'+env.local.uid+'-'+i)
+          .datum(data[i])
+          .attr("class",'line-'+env.local.uid+'-'+i)
           .transition()
           .duration(env.transition.duration)
-          .attr("d", env.local.line);
+          .attr("d", env.local.line); 
         };
 
         if (data.length > env.local.nsets) {
+          console.log('upd 2');
+          console.log('new lines');
           for (let i=env.local.nsets; i < data.length; ++i) {
             env.svg.append("path")
             .datum(data[i])
-            .attr("class", 'line-'+env.local.uid+i)
+            .attr("class", 'line-'+env.local.uid+'-'+i)
             .attr("fill", "none")
             .attr("stroke", env.color)
             .attr("stroke-width", env.strokeWidth)
@@ -518,10 +537,11 @@
         }
 
         if (data.length < env.local.nsets) {
+          console.log('upd 3');
           for (let i=data.length; i < env.local.nsets; ++i) {
-            env.svg.selectAll('.line-'+env.local.uid+i).datum(data[0])
+            env.svg.selectAll('.line-'+env.local.uid+'-'+i).datum(data[0])
             .join("path")
-            .attr("class",'line-'+env.local.uid+i)
+            .attr("class",'line-'+env.local.uid+'-'+i)
             .transition()
             .duration(env.transition.duration)
             .attr("d", env.local.line);            

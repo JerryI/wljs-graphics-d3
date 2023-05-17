@@ -20,21 +20,19 @@
     "url": "https://github.com/JerryI/wljs-graphics-d3/issues"
   },
   "homepage": "https://github.com/JerryI/wljs-graphics-d3#readme",
-  "devDependencies": {
-
-  },
   "dependencies": {
+    "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",
+    "@types/dat.gui": "^0.7.7",
     "d3": "^7.8.2",
+    "d3-interpolate-path": "^2.3.0",
     "plotly.js": "^2.13.1",
     "plotly.js-dist": "^2.18.2",
     "plotly.js-dist-min": "^2.18.2",
-    "@rollup/plugin-commonjs": "^24.0.1",
-    "@types/dat.gui": "^0.7.7",
     "rollup": "^3.20.6",
     "rollup-plugin-combine": "^2.1.1",
     "serve-static": "^1.14.1",
-    "systemjs": "^6.14.1"    
+    "systemjs": "^6.14.1"
   }
 }
