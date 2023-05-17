@@ -294,8 +294,8 @@ let Plotly = false;
     if ('ViewBox' in options) {
 
       let boxsize = interpretate(options.ViewBox, env);
-      if (!(boxsize instanceof Array)) boxsize = [boxsize, boxsize*aspectratio];
-      svg.attr("viewBox", [0, 0, boxsize[0], boxsize[1]]);     
+      if (!(boxsize instanceof Array)) boxsize = [0,0,boxsize, boxsize*aspectratio];
+      svg.attr("viewBox", boxsize);     
 
     } else {
       svg.attr("width", width + margin.left + margin.right)
