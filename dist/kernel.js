@@ -476,8 +476,6 @@ let Plotly = false;
 
   let interpolatePath = false;
 
-  if (!d3) d3 = await import('./index-3c8541b8.js');
-
   g2d.Line.update = async (args, env) => {
     if (!interpolatePath) interpolatePath = (await import('./d3-interpolate-path-3a6490dc.js')).interpolatePath;
 
@@ -513,7 +511,11 @@ let Plotly = false;
           .attr("class",'line-'+env.local.uid+'-'+i)
           .transition()
           .duration(env.transition.duration)
-          .attr("d", env.local.line); 
+          .attrTween('d', function (d) {
+            var previous = d3.select(this).attr('d');
+            var current = env.local.line(d);
+            return interpolatePath(previous, current);
+          }); 
         }
         if (data.length > env.local.nsets) {
           console.log('upd 2');
@@ -546,9 +548,11 @@ let Plotly = false;
           }
         }
 
-        env.local.nsets = Math.max(data.length, env.local.nsets);
+        
       break;
     }    
+
+    env.local.nsets = Math.max(data.length, env.local.nsets);
 
 
   };
