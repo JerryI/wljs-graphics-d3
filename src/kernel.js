@@ -308,7 +308,7 @@
       .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
     
-    let range = [[-1,1],[-1,1]];
+    let range = [[-1.15,1.15],[-1.15,1.15]];
 
     if (options.PlotRange) {
       range = interpretate(options.PlotRange, env);
