@@ -599,7 +599,10 @@
 
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
-
+    
+    if (arrDepth(data) < 2) {
+      data = [data];
+    }
   
     const x = env.xAxis;
     const y = env.yAxis;
