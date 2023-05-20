@@ -262,7 +262,7 @@
     
 
     if (Object.keys(options).length == 0 && args.length > 1) 
-      options = core._getRules(interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
+      options = core._getRules(await interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
 
     console.log(options);
 
@@ -274,9 +274,9 @@
     /**
      * @type {[Number, Number]}
      */
-    let ImageSize = interpretate(options.ImageSize, env) || [core.DefaultWidth, 0.618034*core.DefaultWidth];
+    let ImageSize = await interpretate(options.ImageSize, env) || [core.DefaultWidth, 0.618034*core.DefaultWidth];
 
-    const aspectratio = interpretate(options.AspectRatio, env) || 0.618034;
+    const aspectratio = await interpretate(options.AspectRatio, env) || 0.618034;
 
     //if only the width is specified
     if (!(ImageSize instanceof Array)) ImageSize = [ImageSize, ImageSize*aspectratio];
@@ -294,7 +294,7 @@
 
     if ('ViewBox' in options) {
 
-      let boxsize = interpretate(options.ViewBox, env);
+      let boxsize = await interpretate(options.ViewBox, env);
       if (!(boxsize instanceof Array)) boxsize = [0,0,boxsize, boxsize*aspectratio];
       svg.attr("viewBox", boxsize);     
 
@@ -311,14 +311,14 @@
     let range = [[-1.15,1.15],[-1.15,1.15]];
 
     if (options.PlotRange) {
-      range = interpretate(options.PlotRange, env);
+      range = await interpretate(options.PlotRange, env);
     }
 
     let axis = [false, false];
 
     //simplified version
     if (options.Axes) {
-      options.Axes = interpretate(options.Axes, env);
+      options.Axes = await interpretate(options.Axes, env);
 
       if (options.Axes === true) {
         axis = [true, true];
@@ -360,15 +360,15 @@
       env.transition = {duration: 300};
       
       if (options.TransitionDuration) {
-        env.transition.duration = interpretate(options.TransitionDuration, env);
+        env.transition.duration = await interpretate(options.TransitionDuration, env);
       }
 
       env.local.xAxis = x;
       env.local.yAxis = y;
 
-      interpretate(options.Epilog, env);
-      interpretate(args[0], env);
-      interpretate(options.Prolog, env);
+      await interpretate(options.Epilog, env);
+      await interpretate(args[0], env);
+      await interpretate(options.Prolog, env); 
   }
 
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); }
