@@ -389,16 +389,23 @@ let Plotly = false;
     });
   };
 
-  g2d.Opacity = (args, env) => {
-    env.opacity = interpretate(args[0], env);
+  g2d.Opacity = async (args, env) => {
+    env.opacity = await interpretate(args[0], env);
   };
 
-  g2d.RGBColor = (args, env) => {
+  g2d.RGBColor = async (args, env) => {
     if (args.length == 3) {
-      const color = args.map(el => 255*interpretate(el, env));
-      env.color = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+      env.color = "rgb(";
+      env.color += String(Math.floor(255 * (await interpretate(args[0], env)))) + ",";
+      env.color += String(Math.floor(255 * (await interpretate(args[1], env)))) + ",";
+      env.color += String(Math.floor(255 * (await interpretate(args[2], env)))) + ")";
+
     } else {
-      console.error('g2d: RGBColor must have three arguments!');
+      const a = await interpretate(args[0], env);
+      env.color = "rgb(";
+      env.color += String(Math.floor(255 * a[0])) + ",";
+      env.color += String(Math.floor(255 * a[1])) + ",";
+      env.color += String(Math.floor(255 * a[2])) + ")";      
     }
   };
 
