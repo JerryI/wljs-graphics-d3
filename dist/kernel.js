@@ -26,7 +26,7 @@ let Plotly = false;
       let newarr = [];
 
       let options = {};
-      if (args.length > 1) options = core._getRules(args, env);
+      if (args.length > 1) options = await core._getRules(args, env);
 
       console.log('options');
       console.log(options);
@@ -76,8 +76,8 @@ let Plotly = false;
             core.FireEvent(["'"+event+"'", 0]);
           };
 
-          const renderer = function(args2, env2) {
-            let arr2 = interpretate(args2[0], env2);
+          const renderer = async function(args2, env2) {
+            let arr2 = await interpretate(args2[0], env2);
             let newarr2 = [];
       
             switch(depth) {
@@ -120,7 +120,7 @@ let Plotly = false;
 
             requestAnimationFrame(request);
           }; 
-
+          console.log('assigned to the symbol '+symbol);
           core[symbol] = renderer;
           request();
     };
@@ -136,7 +136,7 @@ let Plotly = false;
       console.log(arr);
       let newarr = [];
 
-      let options = core._getRules(args, env);
+      let options = await core._getRules(args, env);
       /**
        * @type {[Number, Number]}
        */
@@ -251,17 +251,23 @@ let Plotly = false;
 
   interpretate.contextExpand(g2d);
 
+ //polyfill for symbols
+ ["AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+  g2d[name] = () => name;
+  
+  });
+
   g2d.Graphics = async (args, env) => {
     if (!d3) d3 = await import('./index-3c8541b8.js');
 
     /**
      * @type {Object}
      */  
-    let options = core._getRules(args, {...env, context: g2d, hold:true});
+    let options = await core._getRules(args, {...env, context: g2d, hold:true});
     
 
     if (Object.keys(options).length == 0 && args.length > 1) 
-      options = core._getRules(await interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
+      options = await core._getRules(await interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
 
     console.log(options);
 
@@ -302,7 +308,7 @@ let Plotly = false;
          .attr("height", height + margin.top + margin.bottom);
     }
     
-    svg  
+    svg = svg  
     .append("g")
       .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
@@ -340,7 +346,7 @@ let Plotly = false;
       .domain(range[1])
       .range([ height, 0 ]);
     
-    if (axis[1]) svg.append("g").call(d3.axisLeft(y)).call(d3.axisLeft(y));   
+    if (axis[1]) svg.append("g").call(d3.axisLeft(y));
 
 
 
@@ -383,10 +389,10 @@ let Plotly = false;
 
   g2d.Annotation = core.List;
 
-  g2d.Directive = (args, env) => {
-    args.forEach((el) => {
-      interpretate(el, env);
-    });
+  g2d.Directive = async (args, env) => {
+    for (const el of args) {
+      await interpretate(el, env);
+    }
   };
 
   g2d.Opacity = async (args, env) => {
@@ -666,8 +672,8 @@ let Plotly = false;
 
   g2d.Point.virtual = true;  
 
-  g2d.EventListener = (args, env) => {
-    const options = core._getRules(args, env);
+  g2d.EventListener = async (args, env) => {
+    const options = await core._getRules(args, env);
 
     const envcopy = {
       ...env,
@@ -678,7 +684,7 @@ let Plotly = false;
       envcopy.events.push(g2d.EventListener[rule](options[rule], env));
     });
 
-    return interpretate(args[0], envcopy);
+    return await interpretate(args[0], envcopy);
   };
 
   g2d.EventListener.destroy = (args, env) => {interpretate(args[0], env);};
@@ -742,3 +748,7 @@ let Plotly = false;
   g2d.GrayLevel             = g2d.Void;
   g2d.AbsolutePointSize     = g2d.Void;
   g2d.CopiedValueFunction   = g2d.Void;
+
+ 
+
+  console.log(g2d);
