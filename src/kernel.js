@@ -1,3 +1,4 @@
+const { interpolate } = require('d3');
 
   let Plotly = false;
 
@@ -739,6 +740,64 @@
     return d3.zoom()
         .on("zoom", zoom);
   };  
+
+
+  g2d.Rectangle = async (args, env) => {
+    const from = await interpretate(args[0], env);
+    const to = await interpretate(args[1], env);
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    from[0] = x(from[0]);
+    from[1] = y(from[1]);
+    to[0] = x(to[0]);
+    to[1] = y(to[1]);
+
+    
+
+    const size = [Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1])];
+
+
+
+    env.local.rect = env.svg.append('rect')
+    .attr('x', from[0])
+    .attr('y', from[1])
+    .attr('width', size[0])
+    .attr('height', size[1])
+    .attr('stroke', 'black')
+    .attr('fill', env.color);
+
+     
+  }
+  
+  g2d.Rectangle.update = async (args, env) => {
+    const from = await interpretate(args[0], env);
+    const to = await interpretate(args[1], env);
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    from[0] = x(from[0]);
+    from[1] = y(from[1]);
+    to[0] = x(to[0]);
+    to[1] = y(to[1]);
+
+    
+
+    const size = [Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1])];
+
+
+
+    env.local.rect.transition()
+    .duration(env.transition.duration)
+    .attr('x', from[0])
+    .attr('y', from[1]) 
+    .attr('width', size[0])
+    .attr('height', size[1]);
+  }
+
+  g2d.Rectangle.virtual = true
 
   //plugs
   g2d.Void = (args, env) => {};
