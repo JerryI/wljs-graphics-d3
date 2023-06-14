@@ -838,20 +838,20 @@ const { interpolate } = require('d3');
     
     env.local.group = group;
 
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;    
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;    
 
     await interpretate(args[0], {...env, svg: group});
-    group.attr("transform", `translate(${xAxis(pos[0])}, ${yAxis(pos[1])})`);
+    group.attr("transform", `translate(${xAxis(pos[0]) - xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   }
 
   g2d.Translate.update = async (args, env) => {
     const pos = await interpretate(args[1], env);
 
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
 
-    env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])}, ${yAxis(pos[1])})`);
+    env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
 
   }
 
