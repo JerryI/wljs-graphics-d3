@@ -323,6 +323,19 @@ const { interpolate } = require('d3');
 
     let axis = [false, false];
 
+    let transitionType = d3.easeCubicInOut;
+
+    if (options.TransitionType) {
+      const type = await interpretate(options.TransitionType, {...env, context: g2d});
+      switch (type) {
+        case 'Linear':
+          transitionType = d3.easeLinear
+        break;
+        default:
+          transitionType = d3.easeCubicInOut
+      }
+    }
+
     //simplified version
     if (options.Axes) {
       options.Axes = await interpretate(options.Axes, env);
@@ -364,7 +377,7 @@ const { interpolate } = require('d3');
       env.strokeWidth = 1.5;
       env.pointSize = 0.013;
       env.fill = 'none';
-      env.transition = {duration: 300};
+      env.transition = {duration: 300, type: transitionType};
       
       if (options.TransitionDuration) {
         env.transition.duration = await interpretate(options.TransitionDuration, env);
@@ -435,6 +448,8 @@ const { interpolate } = require('d3');
   
   g2d.Hue.destroy = (args, env) => {}
 
+  g2d.CubicInOut = () => 'CubicInOut'
+  g2d.Linear = () => 'Linear'
 
   g2d.Line = async (args, env) => {
     console.log('drawing a line');
@@ -455,6 +470,7 @@ const { interpolate } = require('d3');
         .datum(data)
         .attr("class", 'line-'+uid)
         .attr("fill", "none")
+        .attr('opacity', env.opacity)
         .attr("stroke", env.color)
         .attr("stroke-width", env.strokeWidth)
         .attr("d", d3.line()
@@ -509,7 +525,7 @@ const { interpolate } = require('d3');
         env.svg.selectAll('.line-'+env.local.uid)
         .datum(data)
         .attr("class",'line-'+env.local.uid)
-        .transition()
+        .transition().ease(env.transition.type)
         .duration(env.transition.duration)
         .attrTween('d', function (d) {
           var previous = d3.select(this).attr('d');
@@ -525,7 +541,7 @@ const { interpolate } = require('d3');
           env.svg.selectAll('.line-'+env.local.uid+'-'+i)
           .datum(data[i])
           .attr("class",'line-'+env.local.uid+'-'+i)
-          .transition()
+          .transition().ease(env.transition.type)
           .duration(env.transition.duration)
           .attrTween('d', function (d) {
             var previous = d3.select(this).attr('d');
@@ -544,7 +560,7 @@ const { interpolate } = require('d3');
             .attr("fill", "none")
             .attr("stroke", env.color)
             .attr("stroke-width", env.strokeWidth)
-            .transition()
+            .transition().ease(env.transition.type)
             .duration(env.transition.duration)            
             .attr("d", d3.line()
               .x(function(d) { return x(d[0]) })
@@ -559,7 +575,7 @@ const { interpolate } = require('d3');
             env.svg.selectAll('.line-'+env.local.uid+'-'+i).datum(data[0])
             .join("path")
             .attr("class",'line-'+env.local.uid+'-'+i)
-            .transition()
+            .transition().ease(env.transition.type)
             .duration(env.transition.duration)
             .attr("d", env.local.line);            
           }
@@ -600,7 +616,8 @@ const { interpolate } = require('d3');
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
       .attr("r", env.pointSize*100)
-      .style("fill", env.color);
+      .style("fill", env.color)
+      .style("opacity", env.opacity);
     
     if ('events' in env) {
       //add events liteners
@@ -630,7 +647,7 @@ const { interpolate } = require('d3');
       u.enter()
       .append("circle") // Add a new circle for each new elements
       .attr('class', "dot-"+env.local.uid)
-      .merge(u).transition()
+      .merge(u).transition().ease(env.transition.type)
       .duration(env.transition.duration)
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
@@ -639,7 +656,7 @@ const { interpolate } = require('d3');
 
     } else if (data.length < env.local.npoints) {
 
-      u.transition()
+      u.transition().ease(env.transition.type)
       .duration(env.transition.duration)
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
@@ -648,14 +665,14 @@ const { interpolate } = require('d3');
 
       //remove the rest
       u.exit()
-      .transition() // and apply changes to all of them
+      .transition().ease(env.transition.type) // and apply changes to all of them
       .duration(env.transition.duration)
       .style("opacity", 0)
       .remove();
 
     } else {
 
-      u.transition()
+      u.transition().ease(env.transition.type)
       .duration(env.transition.duration)
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
@@ -723,6 +740,39 @@ const { interpolate } = require('d3');
         .on("end", dragended);
   };
 
+  g2d.EventListener.dragall = (uid, env) => {
+
+    console.log('drag event generator');
+    console.log(env.local);
+    const xAxis = env.local.xAxis;
+    const yAxis = env.local.yAxis;
+
+    function dragstarted(event, d) {
+      d3.select(this).raise().attr("stroke", "black");
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragstarted")
+    }
+
+    const updatePos = throttle((x,y,t) => {
+      server.emitt(uid, `{"${t}", {${x}, ${y}}}`)
+    });
+  
+    function dragged(event, d) {
+      d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragged")
+    }
+  
+    function dragended(event, d) {
+      d3.select(this).attr("stroke", null);
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragended")
+    }
+  
+    return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+  };
+
+
   g2d.EventListener.zoom = (uid, env) => {
 
     console.log('zoom event generator');
@@ -739,7 +789,83 @@ const { interpolate } = require('d3');
   
     return d3.zoom()
         .on("zoom", zoom);
-  };  
+  }; 
+  
+  g2d.Rotate = async (args, env) => {
+    const degrees = await interpretate(args[1], env);
+    if (args.length > 2) {
+      const aligment = await interpretate(args[2], env);
+    }
+
+    const group = env.svg.append("g");
+    
+    env.local.group = group;
+
+    await interpretate(args[0], {...env, svg: group});
+
+    const centre = group.node().getBBox();
+
+    const rotation = "rotate(" + (degrees / Math.PI * 180.0) + ", " + 
+    (centre.x + centre.width / 2) + ", " + (centre.y + centre.height / 2) + ")";
+
+    group.attr("transform", rotation);
+
+    env.local.rotation = rotation;
+  }
+
+  g2d.Rotate.update = async (args, env) => {
+    const degrees = await interpretate(args[1], env);
+
+    const centre = env.local.group.node().getBBox();
+
+    const rotation = "rotate(" + (degrees / Math.PI * 180.0) + ", " + 
+    (centre.x + centre.width / 2) + ", " + (centre.y + centre.height / 2) + ")";
+
+    var interpol_rotate = d3.interpolateString(env.local.rotation, rotation);
+
+    env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attrTween('transform' , function(d,i,a){ return interpol_rotate } )
+  
+    env.local.rotation = rotation;
+  }
+
+  g2d.Rotate.virtual = true
+
+  g2d.Translate = async (args, env) => {
+    const pos = await interpretate(args[1], env);
+    const group = env.svg.append("g");
+
+    if (arrDepth(pos) > 1) throw 'List arguments for Translate is not supported for now!';
+    
+    env.local.group = group;
+
+    const xAxis = env.local.xAxis;
+    const yAxis = env.local.yAxis;    
+
+    await interpretate(args[0], {...env, svg: group});
+    group.attr("transform", `translate(${xAxis(pos[0])}, ${yAxis(pos[1])})`);
+  }
+
+  g2d.Translate.update = async (args, env) => {
+    const pos = await interpretate(args[1], env);
+
+    const xAxis = env.local.xAxis;
+    const yAxis = env.local.yAxis;
+
+    env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])}, ${yAxis(pos[1])})`);
+
+  }
+
+  g2d.Translate.virtual = true  
+
+  g2d.TransitionType = () => 'TransitionType'
+
+  g2d.Center = () => 'Center'
+  g2d.Center.destroy = g2d.Center
+  g2d.Center.update = g2d.Center
+
+  g2d.Degree = () => Math.PI/180.0;
+  g2d.Degree.destroy = g2d.Degree
+  g2d.Degree.update = g2d.Degree
 
 
   g2d.Rectangle = async (args, env) => {
@@ -789,7 +915,7 @@ const { interpolate } = require('d3');
 
 
 
-    env.local.rect.transition()
+    env.local.rect.transition().ease(env.transition.type)
     .duration(env.transition.duration)
     .attr('x', from[0])
     .attr('y', from[1]) 
