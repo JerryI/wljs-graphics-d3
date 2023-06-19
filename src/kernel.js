@@ -1,6 +1,4 @@
-const { interpolate } = require('d3');
 
-  let Plotly = false;
 
   function arrDepth(arr) {
     if (arr[0].length === undefined)        return 1;
@@ -20,232 +18,7 @@ const { interpolate } = require('d3');
     return newm;
   } 
  
-  core.ListPlotly = async function(args, env) {
-      if (!Plotly) Plotly = await import('plotly.js-dist-min');
- 
-      env.numerical = true;
-      let arr = await interpretate(args[0], env);
-      let newarr = [];
-
-      let options = {};
-      if (args.length > 1) options = await core._getRules(args, env);
-
-      console.log('options');
-      console.log(options);
-
-      switch(arrDepth(arr)) {
-        case 1:
-          newarr.push({y: arr, mode: 'markers'});
-        break;
-        case 2:
-          if (arr[0].length === 2) {
-            console.log('1 XY plot');
-            let t = transpose(arr);
-      
-            newarr.push({x: t[0], y: t[1], mode: 'markers'});
-          } else {
-            console.log('multiple Y plot');
-            arr.forEach(element => {
-              newarr.push({y: element, mode: 'markers'}); 
-            });
-          }
-        break;
-        case 3:
-          arr.forEach(element => {
-            let t = transpose(element);
-            newarr.push({x: t[0], y: t[1], mode: 'markers'}); 
-          });
-        break;      
-      }
-
-      Plotly.newPlot(env.element, newarr, {autosize: false, width: core.DefaultWidth, height: core.DefaultWidth*0.618034, margin: {
-          l: 30,
-          r: 30,
-          b: 30,
-          t: 30,
-          pad: 4
-        }});
-      
-      if (!('RequestAnimationFrame' in options)) return;
-      
-          console.log('request animation frame mode');
-          const list = options.RequestAnimationFrame;
-          const event = list[0];
-          const symbol = list[1];
-          const depth = arrDepth(arr);
-          
-          const request = function() {
-            core.FireEvent(["'"+event+"'", 0]);
-          }
-
-          const renderer = async function(args2, env2) {
-            let arr2 = await interpretate(args2[0], env2);
-            let newarr2 = [];
-      
-            switch(depth) {
-              case 1:
-                newarr2.push({y: arr2});
-              break;
-              case 2:
-                if (arr2[0].length === 2) {
-                 
-                  let t = transpose(arr2);
-            
-                  newarr2.push({x: t[0], y: t[1]});
-                } else {
-         
-                  arr2.forEach(element => {
-                    newarr2.push({y: element}); 
-                  });
-                }
-              break;
-              case 3:
-                arr2.forEach(element => {
-   
-                   let newEl = transpose(element);
-                  newarr2.push({x: newEl[0], y: newEl[1]}); 
-                });
-              break;      
-            }
-
-            Plotly.animate(env.element, {
-              data: newarr2
-            }, {
-              transition: {
-                duration: 30
-              },
-              frame: {
-                duration: 0,
-                redraw: false
-              }
-            });
-
-            requestAnimationFrame(request);
-          } 
-          console.log('assigned to the symbol '+symbol);
-          core[symbol] = renderer;
-          request();
-    }
-
-    core.ListPlotly.destroy = ()=>{};
-    
-    core.ListLinePlotly = async function(args, env) {
-      if (!Plotly) Plotly = await import('plotly.js-dist-min');
-      console.log('listlineplot: getting the data...');
-      env.numerical = true;
-      let arr = await interpretate(args[0], env);
-      console.log('listlineplot: got the data...');
-      console.log(arr);
-      let newarr = [];
-
-      let options = await core._getRules(args, env);
-      /**
-       * @type {[Number, Number]}
-       */
-      let ImageSize = options.ImageSize || [core.DefaultWidth, 0.618034*core.DefaultWidth];
   
-      const aspectratio = options.AspectRatio || 0.618034;
-  
-      //if only the width is specified
-      if (!(ImageSize instanceof Array)) ImageSize = [ImageSize, ImageSize*aspectratio];
-  
-      console.log('Image size');
-      console.log(ImageSize);         
-
-      switch(arrDepth(arr)) {
-        case 1:
-          newarr.push({y: arr});
-        break;
-        case 2:
-          if (arr[0].length === 2) {
-            console.log('1 XY plot');
-            let t = transpose(arr);
-            console.log(t);
-      
-            newarr.push({x: t[0], y: t[1]});
-          } else {
-            console.log('multiple Y plot');
-            arr.forEach(element => {
-              newarr.push({y: element}); 
-            });
-          }
-        break;
-        case 3:
-          arr.forEach(element => {
-             
-             let newEl = transpose(element);
-            newarr.push({x: newEl[0], y: newEl[1]}); 
-          });
-        break;      
-      }
-
-      Plotly.newPlot(env.element, newarr, {autosize: false, width: ImageSize[0], height: ImageSize[1], margin: {
-          l: 30,
-          r: 30,
-          b: 30,
-          t: 30,
-          pad: 4
-        }});  
-    }   
-
-    core.ListLinePlotly.update = async (args, env) => {
-      env.numerical = true;
-      console.log('listlineplot: update: ');
-      console.log(args);
-      console.log('interpretate!');
-      let arr = await interpretate(args[0], env);
-      console.log(arr);    
-
-      let newarr = [];
-
-      switch(arrDepth(arr)) {
-        case 1:
-          newarr.push({y: arr});
-        break;
-        case 2:
-          if (arr[0].length === 2) {
-            console.log('1 XY plot');
-            let t = transpose(arr);
-      
-            newarr.push({x: t[0], y: t[1]});
-          } else {
-            console.log('multiple Y plot');
-            arr.forEach(element => {
-              newarr.push({y: element}); 
-            });
-          }
-        break;
-        case 3:
-          arr.forEach(element => {
-            let newEl = transpose(element);
-            
-            newarr.push({x: newEl[0], y: newEl[1]}); 
-          });
-        break;      
-      }
-
-      console.log("plotly with a new data: ");
-      console.log(newarr);
-      console.log("env");
-      console.log(env);
-
-      Plotly.animate(env.element, {
-        data: newarr,
-      }, {
-        transition: {
-          duration: 300,
-          easing: 'cubic-in-out'
-        },
-        frame: {
-          duration: 300
-        }
-      });     
-    }
-    
-    core.ListLinePlotly.destroy = ()=>{};
-
-
-
   let d3 = false;
 
   let g2d = {};
@@ -515,6 +288,8 @@ const { interpolate } = require('d3');
     const x = env.xAxis;
     const y = env.yAxis;
 
+    let obj;
+
 
     switch(arrDepth(data)) {
       case 2:
@@ -522,7 +297,7 @@ const { interpolate } = require('d3');
         //animate equal
 
         //animate the rest
-        env.svg.selectAll('.line-'+env.local.uid)
+        obj = env.svg.selectAll('.line-'+env.local.uid)
         .datum(data)
         .attr("class",'line-'+env.local.uid)
         .transition().ease(env.transition.type)
@@ -538,7 +313,7 @@ const { interpolate } = require('d3');
       case 3:
         for (let i=0; i < Math.min(data.length, env.local.nsets); ++i) {
           console.log('upd 1');
-          env.svg.selectAll('.line-'+env.local.uid+'-'+i)
+          obj = env.svg.selectAll('.line-'+env.local.uid+'-'+i)
           .datum(data[i])
           .attr("class",'line-'+env.local.uid+'-'+i)
           .transition().ease(env.transition.type)
@@ -554,7 +329,7 @@ const { interpolate } = require('d3');
           console.log('upd 2');
           console.log('new lines');
           for (let i=env.local.nsets; i < data.length; ++i) {
-            env.svg.append("path")
+            obj = env.svg.append("path")
             .datum(data[i])
             .attr("class", 'line-'+env.local.uid+'-'+i)
             .attr("fill", "none")
@@ -572,7 +347,7 @@ const { interpolate } = require('d3');
         if (data.length < env.local.nsets) {
           console.log('upd 3');
           for (let i=data.length; i < env.local.nsets; ++i) {
-            env.svg.selectAll('.line-'+env.local.uid+'-'+i).datum(data[0])
+            obj = env.svg.selectAll('.line-'+env.local.uid+'-'+i).datum(data[0])
             .join("path")
             .attr("class",'line-'+env.local.uid+'-'+i)
             .transition().ease(env.transition.type)
@@ -587,6 +362,7 @@ const { interpolate } = require('d3');
 
     env.local.nsets = Math.max(data.length, env.local.nsets);
 
+    return obj;
 
   }
 
@@ -619,14 +395,7 @@ const { interpolate } = require('d3');
       .style("fill", env.color)
       .style("opacity", env.opacity);
     
-    if ('events' in env) {
-      //add events liteners
-      
-      env.events.forEach((e) => {
-        console.log(e);
-        object.call(e)
-      });
-    }
+    return object;
   } 
 
   g2d.Point.update = async (args, env) => {
@@ -681,12 +450,7 @@ const { interpolate } = require('d3');
 
     }
 
-    
-    
-    
     env.local.npoints = data.length;
-
-
   }
 
   g2d.Point.destroy = (args, env) => {interpretate(args[0], env)}
@@ -696,21 +460,50 @@ const { interpolate } = require('d3');
   g2d.EventListener = async (args, env) => {
     const options = await core._getRules(args, env);
 
-    const envcopy = {
-      ...env,
-      events: []
-    };
+    const object = await interpretate(args[0], env);
 
     Object.keys(options).forEach((rule)=>{
-      envcopy.events.push(g2d.EventListener[rule](options[rule], env));
+      g2d.EventListener[rule](options[rule], object, env);
     });
 
-    return await interpretate(args[0], envcopy);
+    return null;
   }
+
+  g2d.MiddlewareListener = async (args, env) => {
+    const options = await core._getRules(args, env);
+    const name = await interpretate(args[1], env);
+    const uid = await interpretate(args[2], env);
+    console.log(args);
+    env.local.middleware = g2d.MiddlewareListener[name](uid, options, env);
+
+    return (await interpretate(args[0], env));
+  }
+
+  g2d.MiddlewareListener.update = (args, env) => {
+    return interpretate(args[0], env);
+  }
+
+  g2d.MiddlewareListener.end = (uid, params, env) => {
+    const threshold = params.Threshold || 1.0;
+    return (object) => {
+      let state = false;
+      return object.then((r) => r.tween(uid, function (d) {
+        return function (t) {
+          if (t >= threshold && !state) {
+            server.emitt(uid, `True`);
+            console.log("FIRED");
+            state = true;
+          }
+        }
+      }))
+    }
+  }
+
+  g2d.MiddlewareListener.endtransition = g2d.MiddlewareListener.end
 
   g2d.EventListener.destroy = (args, env) => {interpretate(args[0], env)}
 
-  g2d.EventListener.drag = (uid, env) => {
+  g2d.EventListener.drag = (uid, object, env) => {
 
     console.log('drag event generator');
     console.log(env.local);
@@ -734,13 +527,13 @@ const { interpolate } = require('d3');
       d3.select(this).attr("stroke", null);
     }
   
-    return d3.drag()
+    object.call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
-        .on("end", dragended);
+        .on("end", dragended));
   };
 
-  g2d.EventListener.dragall = (uid, env) => {
+  g2d.EventListener.dragall = (uid, object, env) => {
 
     console.log('drag event generator');
     console.log(env.local);
@@ -766,14 +559,14 @@ const { interpolate } = require('d3');
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragended")
     }
   
-    return d3.drag()
+    object.call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
-        .on("end", dragended);
+        .on("end", dragended));
   };
 
 
-  g2d.EventListener.zoom = (uid, env) => {
+  g2d.EventListener.zoom = (uid, object, env) => {
 
     console.log('zoom event generator');
     console.log(env.local);
@@ -787,8 +580,8 @@ const { interpolate } = require('d3');
       updatePos(e.transform.k);
     }
   
-    return d3.zoom()
-        .on("zoom", zoom);
+    object.call(d3.zoom()
+        .on("zoom", zoom));
   }; 
   
   g2d.Rotate = async (args, env) => {
@@ -842,7 +635,7 @@ const { interpolate } = require('d3');
     const yAxis = env.yAxis;    
 
     await interpretate(args[0], {...env, svg: group});
-    group.attr("transform", `translate(${xAxis(pos[0]) - xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
+    return group.attr("transform", `translate(${xAxis(pos[0]) - xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   }
 
   g2d.Translate.update = async (args, env) => {
@@ -851,8 +644,7 @@ const { interpolate } = require('d3');
     const xAxis = env.xAxis;
     const yAxis = env.yAxis;
 
-    env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
-
+    return env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   }
 
   g2d.Translate.virtual = true  
