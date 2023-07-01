@@ -485,11 +485,14 @@
 
   g2d.MiddlewareListener.end = (uid, params, env) => {
     const threshold = params.Threshold || 1.0;
+    
+    server.emitt(uid, `True`);
+    console.log("pre Fire");
+
     return (object) => {
       let state = false;
       
-      server.emitt(uid, `True`);
-      console.log("pre Fire");
+      
 
       return object.then((r) => r.tween(uid, function (d) {
         return function (t) {
