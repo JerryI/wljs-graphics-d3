@@ -487,6 +487,10 @@
     const threshold = params.Threshold || 1.0;
     return (object) => {
       let state = false;
+      
+      server.emitt(uid, `True`);
+      console.log("pre Fire");
+
       return object.then((r) => r.tween(uid, function (d) {
         return function (t) {
           if (t >= threshold && !state) {
