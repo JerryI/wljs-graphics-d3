@@ -557,6 +557,24 @@ function arrDepth(arr) {
   };
 
 
+  g2d.EventListener.click = (uid, object, env) => {
+
+    console.log('click event generator');
+    console.log(env.local);
+    const xAxis = env.local.xAxis;
+    const yAxis = env.local.yAxis;
+
+    const updatePos = throttle((x,y) => {
+      server.emitt(uid, `{${x}, ${y}}`);
+    });
+  
+    function clicked(event, d) {
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
+    }
+  
+    object.on("click", clicked);
+  };
+
   g2d.EventListener.zoom = (uid, object, env) => {
 
     console.log('zoom event generator');
