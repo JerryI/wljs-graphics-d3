@@ -1,4 +1,5 @@
 function arrDepth(arr) {
+    if (arr.length === 0)                   return 0;
     if (arr[0].length === undefined)        return 1;
     if (arr[0][0].length === undefined)     return 2;
     if (arr[0][0][0].length === undefined)  return 3;
@@ -220,11 +221,27 @@ function arrDepth(arr) {
 
     env.local.uid = uid;
 
+    let object;
 
 
     switch(arrDepth(data)) {
+      case 0:
+        //empty
+        object = env.svg.append("path")
+        .datum([])
+        .attr("class", 'line-'+uid)
+        .attr("fill", "none")
+        .attr('opacity', env.opacity)
+        .attr("stroke", env.color)
+        .attr("stroke-width", env.strokeWidth)
+        .attr("d", d3.line()
+          .x(function(d) { return x(d[0]) })
+          .y(function(d) { return y(d[1]) })
+          );    
+
+      break;        
       case 2:
-        env.svg.append("path")
+        object = env.svg.append("path")
         .datum(data)
         .attr("class", 'line-'+uid)
         .attr("fill", "none")
@@ -241,7 +258,7 @@ function arrDepth(arr) {
         
 
         data.forEach((d, i)=>{
-          env.svg.append("path")
+          object = env.svg.append("path")
           .datum(d).join("path")
           .attr("class", 'line-'+uid+'-'+i)
           .attr("fill", "none")
@@ -260,6 +277,8 @@ function arrDepth(arr) {
     env.local.line = d3.line()
         .x(function(d) { return env.xAxis(d[0]) })
         .y(function(d) { return env.yAxis(d[1]) });
+
+    return object;
   };
 
   g2d.Line.destroy = (args, env) => {interpretate(args[0], env);};
@@ -277,6 +296,20 @@ function arrDepth(arr) {
 
 
     switch(arrDepth(data)) {
+      case 0:
+        //empty
+        obj = env.svg.selectAll('.line-'+env.local.uid)
+        .datum([])
+        .attr("class",'line-'+env.local.uid)
+        .transition().ease(env.transition.type)
+        .duration(env.transition.duration)
+        .attrTween('d', function (d) {
+          var previous = d3.select(this).attr('d');
+          var current = env.local.line(d);
+          return interpolatePath(previous, current);
+        }); 
+
+      break;
       case 2:
         Math.min(data.length, env.local.nsets);
         //animate equal
@@ -357,8 +390,14 @@ function arrDepth(arr) {
     const x = env.xAxis;
     const y = env.yAxis;
 
-    if (arrDepth(data) < 2) {
-      data = [data];
+
+    const dp = arrDepth(data);
+    if (dp === 0) {
+        data = [];
+    } else {
+      if (dp < 2) {
+        data = [data];
+      }
     }
 
     const uid = uuidv4();
@@ -385,19 +424,25 @@ function arrDepth(arr) {
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
     
-    if (arrDepth(data) < 2) {
-      data = [data];
+    const dp = arrDepth(data);
+    if (dp === 0) {
+        data = [];
+    } else {
+      if (dp < 2) {
+        data = [data];
+      }
     }
   
     const x = env.xAxis;
     const y = env.yAxis;
 
+    let object;
     //mb better not to use selector, but give a direct reference
     const u = env.svg.selectAll('.dot-'+env.local.uid).data(data);
 
     if (data.length > env.local.npoints) {
 
-      u.enter()
+      object= u.enter()
       .append("circle") // Add a new circle for each new elements
       .attr('class', "dot-"+env.local.uid)
       .merge(u).transition().ease(env.transition.type)
@@ -409,7 +454,7 @@ function arrDepth(arr) {
 
     } else if (data.length < env.local.npoints) {
 
-      u.transition().ease(env.transition.type)
+      object = u.transition().ease(env.transition.type)
       .duration(env.transition.duration)
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
@@ -425,7 +470,7 @@ function arrDepth(arr) {
 
     } else {
 
-      u.transition().ease(env.transition.type)
+      object = u.transition().ease(env.transition.type)
       .duration(env.transition.duration)
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
@@ -435,6 +480,8 @@ function arrDepth(arr) {
     }
 
     env.local.npoints = data.length;
+
+    return object;
   };
 
   g2d.Point.destroy = (args, env) => {interpretate(args[0], env);};
@@ -476,13 +523,11 @@ function arrDepth(arr) {
     return (object) => {
       let state = false;
       
-      
 
       return object.then((r) => r.tween(uid, function (d) {
         return function (t) {
           if (t >= threshold && !state) {
             server.emitt(uid, `True`);
-            console.log("FIRED");
             state = true;
           }
         }
@@ -572,7 +617,8 @@ function arrDepth(arr) {
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
     }
   
-    object.on("click", clicked);
+    object.call(d3.drag()
+        .on("start", clicked));
   };
 
   g2d.EventListener.zoom = (uid, object, env) => {
@@ -695,6 +741,7 @@ function arrDepth(arr) {
     .attr('stroke', 'black')
     .attr('fill', env.color);
 
+    return env.local.rect;
      
   };
   
