@@ -21,9 +21,11 @@
  
   
   let d3 = false;
+  let interpolatePath = false;
 
   let g2d = {};
   g2d.name = "WebObjects/Graphics";
+
 
   interpretate.contextExpand(g2d);
 
@@ -35,6 +37,10 @@
 
   g2d.Graphics = async (args, env) => {
     if (!d3) d3 = await import('d3');
+    if (!interpolatePath) interpolatePath = (await import('d3-interpolate-path')).interpolatePath;
+
+    g2d.interpolatePath = interpolatePath;
+    g2d.d3 = d3;
 
     /**
      * @type {Object}
@@ -147,10 +153,10 @@
       env.numerical = true;
       env.tostring = false;
       env.color = 'black';
+      env.stroke = 'black';
       env.opacity = 1;
       env.strokeWidth = 1.5;
       env.pointSize = 0.013;
-      env.fill = 'none';
       env.transition = {duration: 300, type: transitionType};
       
       if (options.TransitionDuration) {
@@ -182,6 +188,14 @@
     for (const el of args) {
       await interpretate(el, env);
     }
+  }
+
+  g2d.EdgeForm = async (args, env) => {
+    const copy = {...env};
+    await interpretate(args[0], copy);
+
+    env.strokeWidth = copy.strokeWidth;
+    env.stroke = copy.color;
   }
 
   g2d.Opacity = async (args, env) => {
@@ -224,6 +238,57 @@
 
   g2d.CubicInOut = () => 'CubicInOut'
   g2d.Linear = () => 'Linear'
+
+  g2d.Polygon = async (args, env) => {
+    const points = await interpretate(args[0], env);
+  
+    points.push(points[0]);
+    
+    env.local.line = d3.line()
+          .x(function(d) { return env.xAxis(d[0]) })
+          .y(function(d) { return env.yAxis(d[1]) });
+  
+    env.local.area = env.svg.append("path")
+      .datum(points)
+      .attr("fill", env.color)
+      .attr('opacity', env.opacity)
+      .attr("stroke", env.stroke)
+      .attr("stroke-width", env.strokeWidth)
+      .attr("d", env.local.line);
+    
+    
+    return env.local.area;
+  }
+  
+  g2d.Polygon.update = async (args, env) => {
+    let points = await interpretate(args[0], env);
+  
+    const x = env.xAxis;
+    const y = env.yAxis;
+  
+    const object = env.local.area
+          .datum(points)
+          .transition().ease(env.transition.type)
+          .duration(env.transition.duration)
+          .attrTween('d', function (d) {
+            var previous = d3.select(this).attr('d');
+            var current = env.local.line(d);
+            return interpolatePath(previous, current);
+          }); 
+    
+    return object;  
+  }
+  
+  g2d.Polygon.destroy = async (args, env) => {
+    /*env.local.area.datum([])
+          .transition().ease(env.transition.type)
+          .duration(env.transition.duration); */
+  
+    interpretate(args[0], env);
+  }
+  
+  g2d.Polygon.virtual = true; //for local memeory and dynamic binding
+
 
   g2d.Line = async (args, env) => {
     console.log('drawing a line');
@@ -298,10 +363,9 @@
 
   g2d.Line.destroy = (args, env) => {interpretate(args[0], env)}
 
-  let interpolatePath = false;
+
 
   g2d.Line.update = async (args, env) => {
-    if (!interpolatePath) interpolatePath = (await import('d3-interpolate-path')).interpolatePath;
 
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
@@ -754,7 +818,7 @@
     .attr('y', from[1])
     .attr('width', size[0])
     .attr('height', size[1])
-    .attr('stroke', 'black')
+    .attr('stroke', env.stroke)
     .attr('fill', env.color);
 
     return env.local.rect;
