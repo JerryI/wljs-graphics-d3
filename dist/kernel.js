@@ -16,7 +16,7 @@ function arrDepth(arr) {
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "Controls", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   
   });
@@ -115,19 +115,22 @@ function arrDepth(arr) {
 
     console.log(range);
 
-    // Add X axis --> it is a date format
-    let x = d3.scaleLinear()
+      // Add X axis --> it is a date format
+      let x = d3.scaleLinear()
       .domain(range[0])
       .range([ 0, width ]);
-    
-    if (axis[0]) svg.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(x));
 
-    // Add Y axis
-    let y = d3.scaleLinear()
+      let gX = undefined;
+      let gY = undefined;
+
+      if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(x));
+
+      // Add Y axis
+      let y = d3.scaleLinear()
       .domain(range[1])
       .range([ height, 0 ]);
     
-    if (axis[1]) svg.append("g").call(d3.axisLeft(y));
+      if (axis[1]) gY = svg.append("g").call(d3.axisLeft(y));
 
 
 
@@ -152,6 +155,11 @@ function arrDepth(arr) {
       env.local.xAxis = x;
       env.local.yAxis = y;
 
+      if (options.Controls) {
+        //add pan and zoom
+        addPanZoom(svg, gX, gY, x, y);
+      }
+
       await interpretate(options.Epilog, env);
       await interpretate(args[0], env);
       await interpretate(options.Prolog, env); 
@@ -159,6 +167,29 @@ function arrDepth(arr) {
 
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
   g2d.Graphics.destroy = (args, env) => { interpretate(args[0], {...env, context: g2d}); };
+
+  const addPanZoom = (view, gX, gY, xAxis, yAxis) => {
+      d3.zoom()
+        .filter(filter)
+        .on("zoom", zoomed);
+
+
+
+      function zoomed({ transform }) {
+        view.attr("transform", transform);
+        if (gX)
+          gX.call(xAxis.scale(transform.rescaleX(x)));
+        if (gY)
+          gY.call(yAxis.scale(transform.rescaleY(y)));
+      }
+  
+    
+      // prevent scrolling then apply the default filter
+      function filter(event) {
+        event.preventDefault();
+        return (!event.ctrlKey || event.type === 'wheel') && !event.button;
+      }    
+  };
 
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
