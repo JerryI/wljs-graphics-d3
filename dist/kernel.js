@@ -75,11 +75,15 @@ function arrDepth(arr) {
       svg.attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom);
     }
+
+    const listenerSVG = svg;
     
     svg = svg  
     .append("g")
       .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
+
+    
     
     let range = [[-1.15,1.15],[-1.15,1.15]];
 
@@ -115,28 +119,34 @@ function arrDepth(arr) {
 
     console.log(range);
 
+
+    let gX = undefined;
+    let gY = undefined;
       // Add X axis --> it is a date format
       let x = d3.scaleLinear()
       .domain(range[0])
       .range([ 0, width ]);
 
-      let gX = undefined;
-      let gY = undefined;
+      const xAxis = d3.axisBottom(x);
 
-      if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(x));
+
+
+      if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis);
 
       // Add Y axis
       let y = d3.scaleLinear()
       .domain(range[1])
       .range([ height, 0 ]);
+
+      const yAxis = d3.axisLeft(y);
     
-      if (axis[1]) gY = svg.append("g").call(d3.axisLeft(y));
+      if (axis[1]) gY = svg.append("g").call(yAxis);
 
 
 
     //since FE object insolates env already, there is no need to make a copy
       env.context = g2d;
-      env.svg = svg;
+      env.svg = svg.append("g");
       env.xAxis = x;
       env.yAxis = y;
       env.numerical = true;
@@ -157,7 +167,8 @@ function arrDepth(arr) {
 
       if (options.Controls) {
         //add pan and zoom
-        addPanZoom(svg, gX, gY, x, y);
+        if (await interpretate(options.Controls, env))
+          addPanZoom(listenerSVG, svg, env.svg, gX, gY, xAxis, yAxis, x, y);
       }
 
       await interpretate(options.Epilog, env);
@@ -168,11 +179,12 @@ function arrDepth(arr) {
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
   g2d.Graphics.destroy = (args, env) => { interpretate(args[0], {...env, context: g2d}); };
 
-  const addPanZoom = (view, gX, gY, xAxis, yAxis) => {
-      d3.zoom()
+  const addPanZoom = (listener, raw, view, gX, gY, xAxis, yAxis, x, y) => {
+      const zoom = d3.zoom()
         .filter(filter)
         .on("zoom", zoomed);
 
+      listener.call(zoom);
 
 
       function zoomed({ transform }) {
