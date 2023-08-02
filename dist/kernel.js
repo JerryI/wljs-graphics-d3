@@ -660,9 +660,9 @@ function arrDepth(arr) {
       d3.select(this).raise().attr("stroke", "black");
     }
 
-    const updatePos = throttle((x,y) => {
+    const updatePos = (x,y) => {
       server.emitt(uid, `{${x}, ${y}}`);
-    });
+    };
   
     function dragged(event, d) {
       d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
@@ -691,9 +691,9 @@ function arrDepth(arr) {
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragstarted");
     }
 
-    const updatePos = throttle((x,y,t) => {
+    const updatePos = (x,y,t) => {
       server.emitt(uid, `{"${t}", {${x}, ${y}}}`);
-    });
+    };
   
     function dragged(event, d) {
       d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
@@ -719,9 +719,9 @@ function arrDepth(arr) {
     const xAxis = env.local.xAxis;
     const yAxis = env.local.yAxis;
 
-    const updatePos = throttle((x,y) => {
+    const updatePos = (x,y) => {
       server.emitt(uid, `{${x}, ${y}}`);
-    });
+    };
   
     function clicked(event, d) {
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
@@ -738,9 +738,9 @@ function arrDepth(arr) {
     const xAxis = env.local.xAxis;
     const yAxis = env.local.yAxis;
 
-    const updatePos = throttle((x,y) => {
+    const updatePos = (x,y) => {
       server.emitt(uid, `{${x}, ${y}}`);
-    });
+    };
   
     function moved(arr) {
       updatePos(xAxis.invert(arr[0]), yAxis.invert(arr[1]));
@@ -756,9 +756,9 @@ function arrDepth(arr) {
     const xAxis = env.local.xAxis;
     const yAxis = env.local.yAxis;
 
-    const updatePos = throttle((x,y) => {
+    const updatePos = (x,y) => {
       server.emitt(uid, `{${x}, ${y}}`);
-    });
+    };
   
     function moved(arr) {
       updatePos(xAxis.invert(arr[0]), yAxis.invert(arr[1]));
@@ -772,9 +772,9 @@ function arrDepth(arr) {
     console.log('zoom event generator');
     console.log(env.local);
 
-    const updatePos = throttle(k => {
+    const updatePos = k => {
       server.emitt(uid, `${k}`);
-    });
+    };
 
     function zoom(e) {
       console.log();
