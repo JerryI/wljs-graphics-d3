@@ -747,6 +747,42 @@
         .on("start", clicked));
   };
 
+  g2d.EventListener.mousemove = (uid, object, env) => {
+
+    console.log('mouse event generator');
+    console.log(env.local);
+    const xAxis = env.local.xAxis;
+    const yAxis = env.local.yAxis;
+
+    const updatePos = throttle((x,y) => {
+      server.emitt(uid, `{${x}, ${y}}`)
+    });
+  
+    function moved(arr) {
+      updatePos(xAxis.invert(arr[0]), yAxis.invert(arr[1]))
+    }
+  
+    object.on("mousemove", e => moved(d3.pointer(e)));
+  };  
+
+  g2d.EventListener.mouseover = (uid, object, env) => {
+
+    console.log('mouse event generator');
+    console.log(env.local);
+    const xAxis = env.local.xAxis;
+    const yAxis = env.local.yAxis;
+
+    const updatePos = throttle((x,y) => {
+      server.emitt(uid, `{${x}, ${y}}`)
+    });
+  
+    function moved(arr) {
+      updatePos(xAxis.invert(arr[0]), yAxis.invert(arr[1]))
+    }
+  
+    object.on("mouseover", e => moved(d3.pointer(e)));
+  };   
+
   g2d.EventListener.zoom = (uid, object, env) => {
 
     console.log('zoom event generator');
@@ -866,6 +902,7 @@
     .attr('height', size[1])
     .attr("vector-effect", "non-scaling-stroke")
     .attr('stroke', env.stroke)
+    .attr('opacity', env.opacity)
     .attr('fill', env.color);
 
     return env.local.rect;
