@@ -339,6 +339,7 @@ function arrDepth(arr) {
         .datum([])
         .attr("class", 'line-'+uid)
         .attr("fill", "none")
+        .attr("vector-effect", "non-scaling-stroke")
         .attr('opacity', env.opacity)
         .attr("stroke", env.color)
         .attr("stroke-width", env.strokeWidth)
@@ -352,6 +353,7 @@ function arrDepth(arr) {
         object = env.svg.append("path")
         .datum(data)
         .attr("class", 'line-'+uid)
+        .attr("vector-effect", "non-scaling-stroke")
         .attr("fill", "none")
         .attr('opacity', env.opacity)
         .attr("stroke", env.color)
@@ -369,6 +371,7 @@ function arrDepth(arr) {
           object = env.svg.append("path")
           .datum(d).join("path")
           .attr("class", 'line-'+uid+'-'+i)
+          .attr("vector-effect", "non-scaling-stroke")
           .attr("fill", "none")
           .attr("stroke", env.color)
           .attr("stroke-width", env.strokeWidth)
@@ -845,6 +848,7 @@ function arrDepth(arr) {
     .attr('y', from[1])
     .attr('width', size[0])
     .attr('height', size[1])
+    .attr("vector-effect", "non-scaling-stroke")
     .attr('stroke', env.stroke)
     .attr('fill', env.color);
 
