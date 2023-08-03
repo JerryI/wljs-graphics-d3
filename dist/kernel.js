@@ -285,7 +285,7 @@ function arrDepth(arr) {
   };
 
   g2d.GrayLevel = async (args, env) => {
-    let level = await interpretate(agrs[0], env);
+    let level = await interpretate(args[0], env);
     if (level.length) {
       level = level[0];
     }
