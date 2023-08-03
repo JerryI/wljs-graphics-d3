@@ -4,7 +4,7 @@
     right: 0;
     margin-right: 0.5em;
     margin-top: 0.5em;
-    opacity: 0;
+    opacity: 0.1;
 }
 
 .d3-controls:hover {
