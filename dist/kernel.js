@@ -171,13 +171,66 @@ function arrDepth(arr) {
           addPanZoom(listenerSVG, svg, env.svg, gX, gY, xAxis, yAxis, x, y);
       }
 
+      const controls = document.createElement('div');
+      controls.classList.add('d3-controls');
+
+      controls.innerHTML = icoExport;
+
+      controls.addEventListener('click', ()=>{
+        saveFile(serialize(container.firstChild), "plot.svg");
+      });
+      
+      env.element.appendChild(controls);
+
       await interpretate(options.Epilog, env);
       await interpretate(args[0], env);
       await interpretate(options.Prolog, env); 
   };
 
+  const icoExport = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" class="w1 h1 mr1"><path d="M2 3C2 1.89543 2.89543 1 4 1H10L14 5V8H12V6H9V3H4V13H6V15H4C2.89543 15 2 14.1046 2 13V3Z"></path><path d="M7.3598 12.7682L8.64017 11.2318L11 13.1983L13.3598 11.2318L14.6402 12.7682L11 15.8017L7.3598 12.7682Z"></path><path d="M10 15L10 9L12 9L12 15L10 15Z"></path></svg>`;
+
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
   g2d.Graphics.destroy = (args, env) => { interpretate(args[0], {...env, context: g2d}); };
+
+
+  const serialize = (svg) => {
+    const xmlns = "http://www.w3.org/2000/xmlns/";
+    const xlinkns = "http://www.w3.org/1999/xlink";
+    const svgns = "http://www.w3.org/2000/svg";
+
+    svg = svg.cloneNode(true);
+    const fragment = window.location.href + "#";
+    const walker = document.createTreeWalker(svg, NodeFilter.SHOW_ELEMENT);
+    while (walker.nextNode()) {
+      for (const attr of walker.currentNode.attributes) {
+        if (attr.value.includes(fragment)) {
+          attr.value = attr.value.replace(fragment, "#");
+        }
+      }
+    }
+    svg.setAttributeNS(xmlns, "xmlns", svgns);
+    svg.setAttributeNS(xmlns, "xmlns:xlink", xlinkns);
+    const serializer = new window.XMLSerializer;
+    const string = serializer.serializeToString(svg);
+    return new Blob([string], {type: "image/svg+xml"});
+  };
+
+  function saveFile(blob, filename) {
+    if (window.navigator.msSaveOrOpenBlob) {
+      window.navigator.msSaveOrOpenBlob(blob, filename);
+    } else {
+      const a = document.createElement('a');
+      document.body.appendChild(a);
+      const url = window.URL.createObjectURL(blob);
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 0);
+    }
+  }
 
   const addPanZoom = (listener, raw, view, gX, gY, xAxis, yAxis, x, y) => {
       const zoom = d3.zoom()
@@ -231,6 +284,18 @@ function arrDepth(arr) {
     env.opacity = await interpretate(args[0], env);
   };
 
+  g2d.GrayLevel = async (args, env) => {
+    let level = await interpretate(agrs[0], env);
+    if (level.length) {
+      level = level[0];
+    }
+
+    level = Math.floor(level * 255);
+
+    env.color = `rgb(${level},${level},${level})`;
+    return env.color;
+  };
+
   g2d.RGBColor = async (args, env) => {
     if (args.length == 3) {
       env.color = "rgb(";
@@ -245,10 +310,13 @@ function arrDepth(arr) {
       env.color += String(Math.floor(255 * a[1])) + ",";
       env.color += String(Math.floor(255 * a[2])) + ")";      
     }
+
+    return env.color;
   };
 
   g2d.RGBColor.destroy = (args, env) => {};
   g2d.Opacity.destroy = (args, env) => {};
+  g2d.GrayLevel.destroy = (args, env) => {};
   
   g2d.PointSize.destroy = (args, env) => {};
   g2d.AbsoluteThickness.destroy = (args, env) => {};
@@ -929,7 +997,7 @@ function arrDepth(arr) {
   g2d.Scaled                = g2d.Void;
   g2d.GoldenRatio           = g2d.Void;
   g2d.None                  = g2d.Void;
-  g2d.GrayLevel             = g2d.Void;
+
   g2d.AbsolutePointSize     = g2d.Void;
   g2d.CopiedValueFunction   = g2d.Void;
 
