@@ -171,16 +171,18 @@ function arrDepth(arr) {
           addPanZoom(listenerSVG, svg, env.svg, gX, gY, xAxis, yAxis, x, y);
       }
 
-      const controls = document.createElement('div');
-      controls.classList.add('d3-controls');
+      if (core._NotebookUI) {
+        const controls = document.createElement('div');
+        controls.classList.add('d3-controls');
 
-      controls.innerHTML = icoExport;
+        controls.innerHTML = icoExport;
 
-      controls.addEventListener('click', ()=>{
-        saveFile(serialize(container.firstChild), "plot.svg");
-      });
-      
-      env.element.appendChild(controls);
+        controls.addEventListener('click', ()=>{
+          saveFile(serialize(container.firstChild), "plot.svg");
+        });
+
+        env.element.appendChild(controls);
+      }
 
       await interpretate(options.Epilog, env);
       await interpretate(args[0], env);
