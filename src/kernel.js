@@ -623,6 +623,9 @@
 
     const points = [];
 
+    //a hack to make non-scalable 
+    //https://muffinman.io/blog/svg-non-scaling-circle-and-rectangle/
+
     data.forEach((d) => {
       points.push(
        object.append("path")
@@ -765,7 +768,7 @@
     }
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`)
+      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
     });
   
     function dragged(event, d) {
@@ -797,7 +800,7 @@
     }
 
     const updatePos = throttle((x,y,t) => {
-      server.emitt(uid, `{"${t}", {${x}, ${y}}}`)
+      server.emitt(uid, `{"${t}", {${x}, ${y}}}`.replace('e', '*^').replace('e', '*^'))
     });
   
     function dragged(event, d) {
@@ -825,7 +828,7 @@
     const yAxis = env.local.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`)
+      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
     });
   
     function clicked(event, d) {
@@ -844,7 +847,7 @@
     const yAxis = env.local.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`)
+      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'));
     });
   
     function moved(arr) {
@@ -862,7 +865,7 @@
     const yAxis = env.local.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`)
+      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
     });
   
     function moved(arr) {
