@@ -365,6 +365,7 @@
       .datum(points)
       .attr("fill", env.color)
       .attr('opacity', env.opacity)
+      .attr("vector-effect", "non-scaling-stroke")
       .attr("stroke", env.stroke)
       .attr("stroke-width", env.strokeWidth)
       .attr("d", env.local.line);
@@ -607,6 +608,7 @@
     .data(data)
     .enter()
     .append("circle")
+    .attr("vector-effect", "non-scaling-stroke")
     .attr('class', "dot-"+uid)
       .attr("cx", function (d) { return x(d[0]); } )
       .attr("cy", function (d) { return y(d[1]); } )
