@@ -288,6 +288,8 @@
     }
   }
 
+  g2d.Directive.destroy = g2d.Directive
+
   g2d.EdgeForm = async (args, env) => {
     const copy = {...env};
     await interpretate(args[0], copy);
@@ -599,11 +601,8 @@
 
     const uid = uuidv4();
     env.local.uid = uid;
-    env.local.npoints = data.length;
 
-    
-
-    const object = env.svg.append('g')
+    /*const object = env.svg.append('g')
     .selectAll()
     .data(data)
     .enter()
@@ -614,7 +613,26 @@
       .attr("cy", function (d) { return y(d[1]); } )
       .attr("r", env.pointSize*100)
       .style("fill", env.color)
-      .style("opacity", env.opacity);
+      .style("opacity", env.opacity);*/
+
+    const object = env.svg.append('g')
+    .style("stroke-width", env.pointSize*100*2)
+    .style("stroke-linecap", "round")
+    .style("stroke", env.color)
+    .style("opacity", env.opacity);
+
+    const points = [];
+
+    data.forEach((d) => {
+      points.push(
+       object.append("path")
+      .attr("d", `M ${x(d[0])} ${y(d[1])} l 0.0001 0`) 
+      .attr("vector-effect", "non-scaling-stroke")
+      );
+    });
+
+    env.local.points = points;
+    env.local.object = object;
     
     return object;
   } 
@@ -635,49 +653,43 @@
     const y = env.yAxis;
 
     let object;
-    //mb better not to use selector, but give a direct reference
-    const u = env.svg.selectAll('.dot-'+env.local.uid).data(data);
+  
+    const u = env.local.object;
 
-    if (data.length > env.local.npoints) {
+    const minLength = Math.min(env.local.points.length, data.length);
 
-      object= u.enter()
-      .append("circle") // Add a new circle for each new elements
-      .attr('class', "dot-"+env.local.uid)
-      .merge(u).transition().ease(env.transition.type)
+    let prev = [0,0];
+
+    for (let i=env.local.points.length; i<data.length; i++) {
+      if (i-1 >= 0) prev = data[i-1];
+
+      object = u.append("path")
+      .attr("d", `M ${x(prev[0])} ${y(prev[1])} l 0.0001 0`) 
+      .style("opacity", env.opacity/5)
+      .attr("vector-effect", "non-scaling-stroke");
+
+      env.local.points.push(object);
+
+      object = object.transition().ease(env.transition.type)
       .duration(env.transition.duration)
-      .attr("cx", function (d) { return x(d[0]); } )
-      .attr("cy", function (d) { return y(d[1]); } )
-      .attr("r", env.pointSize*100)
-      .style("fill", env.color);
+      .attr("d", `M ${x(data[i][0])} ${y(data[i][1])} l 0.0001 0`) 
+      .style("opacity", env.opacity);
+    };
 
-    } else if (data.length < env.local.npoints) {
+    for (let i=env.local.points.length; i>data.length; i--) {
+      object = env.local.points.pop();
 
-      object = u.transition().ease(env.transition.type)
-      .duration(env.transition.duration)
-      .attr("cx", function (d) { return x(d[0]); } )
-      .attr("cy", function (d) { return y(d[1]); } )
-      .attr("r", env.pointSize*100)
-      .style("fill", env.color);
-
-      //remove the rest
-      u.exit()
-      .transition().ease(env.transition.type) // and apply changes to all of them
+      object.transition().ease(env.transition.type)
       .duration(env.transition.duration)
       .style("opacity", 0)
-      .remove();
+      .remove(); 
+    };
 
-    } else {
-
-      object = u.transition().ease(env.transition.type)
+    for (let i=0; i < minLength; i++) {
+      object = env.local.points[i].transition().ease(env.transition.type)
       .duration(env.transition.duration)
-      .attr("cx", function (d) { return x(d[0]); } )
-      .attr("cy", function (d) { return y(d[1]); } )
-      .attr("r", env.pointSize*100)
-      .style("fill", env.color);
-
+      .attr("d", `M ${x(data[i][0])} ${y(data[i][1])} l 0.0001 0`);
     }
-
-    env.local.npoints = data.length;
 
     return object;
   }
@@ -689,7 +701,8 @@
   g2d.EventListener = async (args, env) => {
     const options = await core._getRules(args, env);
 
-    const object = await interpretate(args[0], env);
+    let object = await interpretate(args[0], env);
+    if (Array.isArray(object)) object = object[0];
 
     Object.keys(options).forEach((rule)=>{
       g2d.EventListener[rule](options[rule], object, env);
@@ -744,8 +757,11 @@
     const xAxis = env.local.xAxis;
     const yAxis = env.local.yAxis;
 
+    let origin = [];
+
     function dragstarted(event, d) {
-      d3.select(this).raise().attr("stroke", "black");
+      if (origin.length === 0) origin = [event.x, event.y];
+      //d3.select(this).raise().attr("stroke", "black");   
     }
 
     const updatePos = throttle((x,y) => {
@@ -753,12 +769,13 @@
     });
   
     function dragged(event, d) {
-      d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
+      d3.select(this).raise().attr("transform", d=> "translate("+[event.x - origin[0], event.y  - origin[1]]+")" )
+
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
     }
   
     function dragended(event, d) {
-      d3.select(this).attr("stroke", null);
+      //d3.select(this).attr("stroke", null);
     }
   
     object.call(d3.drag()
@@ -775,7 +792,7 @@
     const yAxis = env.local.yAxis;
 
     function dragstarted(event, d) {
-      d3.select(this).raise().attr("stroke", "black");
+      //d3.select(this).raise().attr("stroke", "black");
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragstarted")
     }
 
@@ -784,12 +801,12 @@
     });
   
     function dragged(event, d) {
-      d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
+      //d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragged")
     }
   
     function dragended(event, d) {
-      d3.select(this).attr("stroke", null);
+      //d3.select(this).attr("stroke", null);
       updatePos(xAxis.invert(event.x), yAxis.invert(event.y), "dragended")
     }
   
