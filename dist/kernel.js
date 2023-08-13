@@ -258,6 +258,117 @@ function arrDepth(arr) {
       }    
   };
 
+  g2d.SVGAttribute = async (args, env) => {
+    const attrs = await core._getRules(args, env);
+    let obj = await interpretate(args[0], env);
+    
+    Object.keys(attrs).forEach((a)=> {
+      obj = obj.attr(a, attrs[a]);
+    });
+
+    env.local.object = obj;
+    return obj;
+  };
+
+  g2d.SVGAttribute.update = async (args, env) => {
+    const attrs = await core._getRules(args, env);
+    //skipping evaluation of the children object
+    let obj = env.local.object
+      .transition()
+      .ease(env.transition.type)
+      .duration(env.transition.duration);
+    
+    Object.keys(attrs).forEach((a)=> {
+      obj = obj.attr(a, attrs[a]);
+    });
+
+    return obj;
+  };  
+
+  g2d.SVGAttribute.destroy = async (args, env) => {
+    await core._getRules(args, env);
+    await interpretate(args[0], env);
+  };
+
+  g2d.SVGAttribute.virtual = true;
+
+  g2d.Text = async (args, env) => {
+    const text = await interpretate(args[0], env);
+    const coords = await interpretate(args[1], env);
+
+    const object = env.svg.append('text')
+      .text(text)
+      .attr("font-family", env.fontfamily)
+      .attr("font-size", env.fontsize)
+      .attr("fill", env.color);
+
+    if (args.length > 2) {
+      const offset = await interpretate(args[2], env);
+
+      object
+      .attr("x", env.xAxis(coords[0] + offset[0]))
+      .attr("y", env.yAxis(coords[1] + offset[1]));
+
+    } else {
+
+      object
+      .attr("x", env.xAxis(coords[0]))
+      .attr("y", env.yAxis(coords[1]));
+
+    }
+
+    env.local.object = object;
+
+    return object;
+  };
+  
+  g2d.Text.virtual = true;
+
+  g2d.Text.update = async (args, env) => {
+    const text = await interpretate(args[0], env);
+    const coords = await interpretate(args[1], env);
+
+    const trans = env.local.object
+      .transition()
+      .ease(env.transition.type)
+      .duration(env.transition.duration)
+      .text(text)
+      .attr("x", env.xAxis(coords[0]))
+      .attr("y", env.yAxis(coords[1]))
+      .attr("fill", env.color);
+
+    return trans;
+  };   
+
+  g2d.Text.destroy = async (args, env) => {
+    for (const o of args) {
+      await interpretate(o, env);
+    }
+  };
+
+  //transformation context to convert fractions and etc to SVG form
+  g2d.Text.subcontext = {};
+  //TODO
+
+  g2d.FontSize = () => "FontSize";
+  g2d.FontSize.destroy = g2d.FontSize;
+  g2d.FontFamily = () => "FontFamily";
+  g2d.FontFamily.destroy = g2d.FontFamily;
+  
+  g2d.Style = async (args, env) => {
+    const options = await core._getRules(args, env);
+    
+    if (options.FontSize) {
+      env.fontsize = options.FontSize;
+    }  
+  
+    if (options.FontFamily) {
+      env.fontfamily = options.FontFamily;
+    } 
+  
+    return await interpretate(args[0], env);
+  };  
+
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
   };
