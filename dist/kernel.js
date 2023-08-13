@@ -32,10 +32,12 @@ function arrDepth(arr) {
      * @type {Object}
      */  
     let options = await core._getRules(args, {...env, context: g2d, hold:true});
-    
 
-    if (Object.keys(options).length == 0 && args.length > 1) 
+
+    if (Object.keys(options).length == 0 && args.length > 1) {
       options = await core._getRules(await interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
+ 
+    }
 
     console.log(options);
 
@@ -57,9 +59,76 @@ function arrDepth(arr) {
     console.log('Image size');
     console.log(ImageSize); 
 
-    let margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = ImageSize[0] - margin.left - margin.right,
-    height = ImageSize[1] - margin.top - margin.bottom;
+    //simplified version
+    let axis = [false, false];
+    let invertedTicks = false;
+    let ticklengths = [5,5,5,5];
+    let framed = false;
+
+    console.log(options);
+
+    if (options.Frame) {
+      options.Frame = await interpretate(options.Frame, env);
+      if (options.Frame === true) {
+        framed = true;
+      } else {
+        if (options.Frame[0][0] === true) framed = true;
+        if (options.Frame[0] === true) framed = true;  
+      }
+    }
+    
+    if (options.Axes) {
+      options.Axes = await interpretate(options.Axes, env);
+      if (options.Axes === true) {
+        axis = [true, true];
+      } else if (Array.isArray(options.Axes)) {
+        axis = options.Axes;
+
+      }
+    }  
+
+    if (framed) {
+      invertedTicks = true;
+      axis = [true, true, true, true];
+    }
+
+    if (options.FrameTicks && framed) {
+      options.FrameTicks = await interpretate(options.FrameTicks, env);
+      
+      if (Number.isInteger(options.FrameTicks)) {
+        axis = axis.map((e)=>options.FrameTicks);
+      }
+      
+      if (Array.isArray(options.FrameTicks)) {
+        if (Number.isInteger(options.FrameTicks[0])) axis[0] = options.FrameTicks[0];
+        if (Number.isInteger(options.FrameTicks[1])) axis[1] = options.FrameTicks[1];
+        if (Number.isInteger(options.FrameTicks[2])) axis[2] = options.FrameTicks[2];
+        if (Number.isInteger(options.FrameTicks[3])) axis[3] = options.FrameTicks[3];
+      }
+    }
+    
+    if (options.TickDirection) {
+      const dir = await interpretate(options.TickDirection, env);
+      if (dir === "Inward") invertedTicks = true;
+      if (dir === "Outward") invertedTicks = false;
+    }
+
+    if (options.TickLengths) {
+      options.TickLengths = await interpretate(options.TickLengths, env);
+      if (!Array.isArray(options.TickLengths)) {
+        ticklengths = [options.TickLengths, options.TickLengths, options.TickLengths, options.TickLengths];
+      }
+    }
+    
+    let margin = {top: 10, right: 30, bottom: 30, left: 60};
+
+    if (axis[2]) {
+      margin.top = margin.bottom;
+      margin.left = margin.right;
+    }
+    
+    let width = ImageSize[0] - margin.left - margin.right;
+    let height = ImageSize[1] - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
     let svg = d3.select(container)
@@ -91,7 +160,7 @@ function arrDepth(arr) {
       range = await interpretate(options.PlotRange, env);
     }
 
-    let axis = [false, false];
+    
 
     let transitionType = d3.easeCubicInOut;
 
@@ -106,49 +175,70 @@ function arrDepth(arr) {
       }
     }
 
-    //simplified version
-    if (options.Axes) {
-      options.Axes = await interpretate(options.Axes, env);
 
-      if (options.Axes === true) {
-        axis = [true, true];
-      } else if (Array.isArray(options.Axes)) {
-        axis = options.Axes;
-      }
-    }
 
     console.log(range);
 
 
     let gX = undefined;
     let gY = undefined;
-      // Add X axis --> it is a date format
+
+    let gTX = undefined;
+    let gRY = undefined;
+    
       let x = d3.scaleLinear()
       .domain(range[0])
       .range([ 0, width ]);
 
-      const xAxis = d3.axisBottom(x);
+    let xAxis = d3.axisBottom(x);
+    let txAxis = d3.axisTop(x);
 
+    console.log(axis);
+    
+    if (Number.isInteger(axis[0])) xAxis = xAxis.ticks(axis[0]);
+    if (Number.isInteger(axis[2])) txAxis = txAxis.ticks(axis[2]);
 
+    if (invertedTicks) {
+      xAxis = xAxis.tickSizeInner(-ticklengths[0]).tickSizeOuter(0);
+      txAxis = txAxis.tickSizeInner(-ticklengths[2]).tickSizeOuter(0);
+    } else { 
+      xAxis = xAxis.tickSizeInner(ticklengths[0]).tickSizeOuter(0);
+      txAxis = txAxis.tickSizeInner(ticklengths[2]).tickSizeOuter(0); 
+    }
 
-      if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis);
+    if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis);
+    if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis);
 
       // Add Y axis
       let y = d3.scaleLinear()
       .domain(range[1])
       .range([ height, 0 ]);
 
-      const yAxis = d3.axisLeft(y);
-    
-      if (axis[1]) gY = svg.append("g").call(yAxis);
+      let yAxis = d3.axisLeft(y);
+      let ryAxis = d3.axisRight(y);
 
+    if (Number.isInteger(axis[1])) yAxis = yAxis.ticks(axis[1]);
+    if (Number.isInteger(axis[3])) ryAxis = ryAxis.ticks(axis[3]);
+    
+    if (invertedTicks) {
+      yAxis = yAxis.tickSizeInner(-ticklengths[1]).tickSizeOuter(0);
+      ryAxis = ryAxis.tickSizeInner(-ticklengths[3]).tickSizeOuter(0);
+    } else {
+      yAxis = yAxis.tickSizeInner(ticklengths[1]).tickSizeOuter(0);
+      ryAxis = ryAxis.tickSizeInner(ticklengths[3]).tickSizeOuter(0);      
+    }
+
+
+    
+    if (axis[1]) gY = svg.append("g").call(yAxis);
+    if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis);
 
 
     //since FE object insolates env already, there is no need to make a copy
       env.context = g2d;
       env.svg = svg.append("g");
       env.xAxis = x;
-      env.yAxis = y;
+      env.yAxis = y;     
       env.numerical = true;
       env.tostring = false;
       env.color = 'black';
@@ -168,7 +258,7 @@ function arrDepth(arr) {
       if (options.Controls) {
         //add pan and zoom
         if (await interpretate(options.Controls, env))
-          addPanZoom(listenerSVG, svg, env.svg, gX, gY, xAxis, yAxis, x, y);
+          addPanZoom(listenerSVG, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
       }
 
       if (core._NotebookUI) {
@@ -183,6 +273,8 @@ function arrDepth(arr) {
 
         env.element.appendChild(controls);
       }
+
+
 
       await interpretate(options.Epilog, env);
       await interpretate(args[0], env);
@@ -234,7 +326,7 @@ function arrDepth(arr) {
     }
   }
 
-  const addPanZoom = (listener, raw, view, gX, gY, xAxis, yAxis, x, y) => {
+  const addPanZoom = (listener, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y) => {
       const zoom = d3.zoom()
         .filter(filter)
         .on("zoom", zoomed);
@@ -248,6 +340,11 @@ function arrDepth(arr) {
           gX.call(xAxis.scale(transform.rescaleX(x)));
         if (gY)
           gY.call(yAxis.scale(transform.rescaleY(y)));
+
+        if (gTX)
+          gTX.call(txAxis.scale(transform.rescaleX(x)));
+        if (gRY)
+          gRY.call(ryAxis.scale(transform.rescaleY(y)));          
       }
   
     
