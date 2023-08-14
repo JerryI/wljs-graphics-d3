@@ -164,7 +164,7 @@ function arrDepth(arr) {
     }
 
     if (framed) {
-      padding.left = 10;
+      padding.left = 20;
     }
     
     let width = ImageSize[0] - margin.left - margin.right;
@@ -285,21 +285,21 @@ function arrDepth(arr) {
 
       if (Array.isArray(options.AxesLabel)) {
         if (options.AxesLabel[0] != 'None') {
-          gX.append("text")
+          g2d.Text.PutText(gX.append("text")
           .attr("x", width)
           .attr("y", margin.bottom)
           .attr("fill", "currentColor")
           .attr("text-anchor", "end")
-          .text(options.AxesLabel[0]); 
+          , options.AxesLabel[0], {fontsize:14}); 
         }
 
         if (options.AxesLabel[1] != 'None') {
-          gY.append("text")
+          g2d.Text.PutText(gY.append("text")
           .attr("x", 0)
           .attr("y", -margin.top/2)
           .attr("fill", "currentColor")
           .attr("text-anchor", "start")
-          .text(options.AxesLabel[1]); 
+          , options.AxesLabel[1], {fontsize:14}); 
         }        
  
       }
@@ -310,41 +310,44 @@ function arrDepth(arr) {
       options.FrameLabel = await interpretate(options.FrameLabel, env);
 
       if (Array.isArray(options.FrameLabel)) {
-        if (options.FrameLabel[0][0] != 'None') {
-          gX.append("text")
+        if (options.FrameLabel[1][0] != 'None') {
+          g2d.Text.PutText(gX.append("text")
           .attr("x", width/2)
           .attr("y", margin.bottom)
           .attr("fill", "currentColor")
           .attr("text-anchor", "middle")
-          .text(options.FrameLabel[0][0]); 
+          , options.FrameLabel[1][0], {fontsize: 14}); 
         }
 
-        if (options.FrameLabel[1][0] != 'None') {
-          gY.append("text")
+        if (options.FrameLabel[0][0] != 'None') {
+          g2d.Text.PutText(gY.append("text")
           .attr("transform", "rotate(-90)")
           .attr("y", -margin.left)
           .attr("x", -height/2)
           .attr("fill", "currentColor")
           .attr("text-anchor", "middle")
-          .text(options.FrameLabel[1][0]); 
+          , options.FrameLabel[0][0], {fontsize: 14}); 
         } 
 
-        if (options.FrameLabel[0][1] != 'None') {
+        if (options.FrameLabel[1][1] != 'None') {
+          g2d.Text.PutText(
           gTX.append("text")
           .attr("x", width/2)
           .attr("y", margin.bottom)
           .attr("fill", "currentColor")
           .attr("text-anchor", "middle")
-          .text(options.FrameLabel[0][1]); 
+          , options.FrameLabel[1][1], {fontsize: 14});
         }
 
-        if (options.FrameLabel[1][1] != 'None') {
-          gRY.append("text")
-          .attr("x", 0)
-          .attr("y", margin.bottom)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "middle")
-          .text(options.FrameLabel[1][1]); 
+        if (options.FrameLabel[0][1] != 'None') {
+          g2d.Text.PutText(
+            gRY.append("text")
+              .attr("x", 0)
+              .attr("y", margin.bottom)
+              .attr("fill", "currentColor")
+              .attr("text-anchor", "middle"),
+            
+            options.FrameLabel[0][1], {fontsize: 14});
         }        
  
       }
@@ -360,6 +363,7 @@ function arrDepth(arr) {
       env.color = 'black';
       env.stroke = 'black';
       env.opacity = 1;
+      env.fontsize = 14;
       env.strokeWidth = 1.5;
       env.pointSize = 0.013;
       env.transition = {duration: 300, type: transitionType};
@@ -505,12 +509,14 @@ function arrDepth(arr) {
 
   g2d.SVGAttribute.virtual = true;
 
+
+
+
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
 
     const object = env.svg.append('text')
-      .text(text)
       .attr("font-family", env.fontfamily)
       .attr("font-size", env.fontsize)
       .attr("fill", env.color);
@@ -530,11 +536,89 @@ function arrDepth(arr) {
 
     }
 
+    g2d.Text.PutText(object, text, env);
+
     env.local.object = object;
 
     return object;
   };
+
+  g2d.Text.PutText = (object, text, env) => {
+    //parse the text
+    const tokens = [g2d.Text.TokensSplit(text.replaceAll(/\\([a-zA-z]+)/g, g2d.Text.GreekReplacer), g2d.Text.TextOperators)].flat(Infinity);
+    console.log(tokens);
+
+    object.html(tokens.shift());
+
+    let token;
+    let dy = 0;
+    while((token = tokens.shift()) != undefined) {
+      if (typeof token === 'string') {
+        object.append('tspan').html(token).attr('font-size', env.fontsize).attr('dy', -dy);
+        dy = 0;
+      } else {
+        dy = -env.fontsize*token.ky;
+        object.append('tspan').html(token.data).attr('font-size', Math.round(env.fontsize*token.kf)).attr('dy', dy);
+      }
+    }
+  };
+
+  g2d.Text.TextOperators = [
+    {
+      type: 'sup',
+      handler: (a) => a,
+      regexp: /\^(\d{1,3})/,
+      meta: {
+        ky: 0.5,
+        kf: 0.5
+      }
+    },
+    {
+      type: 'sup',
+      handler: (a) => a,
+      regexp: /\^{([^{|}]*)}/,
+      meta: {
+        ky: 0.5,
+        kf: 0.5
+      }      
+    },
+    {
+      type: 'sub',
+      handler: (a) => a,
+      regexp: /\_(\d{1,3})/,
+      meta: {
+        ky: -0.75,
+        kf: 0.5
+      }      
+    },
+    {
+      type: 'sub',
+      handler: (a) => a,
+      regexp: /\_{([^{|}]*)}/,
+      meta: {
+        ky: -0.75,
+        kf: 0.5
+      }
+    }  
+  ];
   
+  g2d.Text.GreekReplacer = (a, b, c) => {
+    return "&" +
+        b
+          .toLowerCase()
+          .replace("sqrt", "radic")
+          .replace("degree", "deg") +
+        ";";
+  };
+  
+  g2d.Text.TokensSplit = (str, ops, index = 0) => {
+    if (index === ops.length || index < 0) return str;
+    const match = str.match(ops[index].regexp);
+    if (match === null) return g2d.Text.TokensSplit(str, ops, index + 1);
+    const obj = {type: ops[index].type, data: ops[index].handler(match[1]), ...ops[index].meta};
+    return [g2d.Text.TokensSplit(str.slice(0, match.index), ops, index + 1), obj, g2d.Text.TokensSplit(str.slice(match.index+match[0].length), ops, 0)]
+  };  
+
   g2d.Text.virtual = true;
 
   g2d.Text.update = async (args, env) => {
