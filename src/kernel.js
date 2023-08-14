@@ -77,6 +77,8 @@
     let axis = [false, false];
     let invertedTicks = false;
     let ticklengths = [5,5,5,5];
+    let tickLabels = [true, true, true, true];
+    let ticks = undefined;
     let framed = false;
 
     console.log(options);
@@ -106,20 +108,37 @@
       axis = [true, true, true, true];
     }
 
+    
+
+    if (options.Ticks) {
+      options.Ticks = await interpretate(options.Ticks, env);
+      //BRRRR
+
+      //left, bottom
+      if (Array.isArray(options.Ticks)) {
+        if (Array.isArray(options.Ticks[0])) {
+          if (Number.isInteger(options.Ticks[0][0])) {
+            ticks = [...options.Ticks, ...options.Ticks];
+          }
+        }
+      }      
+    }
+
     if (options.FrameTicks && framed) {
       options.FrameTicks = await interpretate(options.FrameTicks, env);
-      
-      if (Number.isInteger(options.FrameTicks)) {
-        axis = axis.map((e)=>options.FrameTicks);
-      }
-      
+      //I HATE YOU WOLFRAM
+
+      //left,right,  bottom,top
       if (Array.isArray(options.FrameTicks)) {
-        if (Number.isInteger(options.FrameTicks[0])) axis[0] = options.FrameTicks[0];
-        if (Number.isInteger(options.FrameTicks[1])) axis[1] = options.FrameTicks[1];
-        if (Number.isInteger(options.FrameTicks[2])) axis[2] = options.FrameTicks[2];
-        if (Number.isInteger(options.FrameTicks[3])) axis[3] = options.FrameTicks[3];
+        if (Array.isArray(options.FrameTicks[0])) {
+          if (Number.isInteger(options.FrameTicks[0][0][0])) {
+            ticks = [options.FrameTicks[0][0], options.FrameTicks[1][0], options.FrameTicks[0][1], options.FrameTicks[1][1]];
+          }
+        }
       }
     }
+
+    
     
     if (options.TickDirection) {
       const dir = await interpretate(options.TickDirection, env);
@@ -133,12 +152,33 @@
         ticklengths = [options.TickLengths, options.TickLengths, options.TickLengths, options.TickLengths];
       }
     }
+
+    if (options.TickLabels) {
+      options.TickLabels = await interpretate(options.TickLabels, env);
+      if (!Array.isArray(options.TickLabels)) {
+        tickLabels = [false, false, false, false];
+      } else {
+        tickLabels = options.TickLabels.flat();
+      }      
+    }
+
+    //-----------------
     
     let margin = {top: 10, right: 30, bottom: 30, left: 60};
+    let padding = {top: 0, right: 0, bottom: 0, left: 0}
 
     if (axis[2]) {
       margin.top = margin.bottom;
       margin.left = margin.right;
+    }
+
+    if (options.AxesLabel) {
+      margin.top = margin.bottom;
+      padding.bottom = 10;
+    }
+
+    if (framed) {
+      padding.left = 10;
     }
     
     let width = ImageSize[0] - margin.left - margin.right;
@@ -155,8 +195,8 @@
       svg.attr("viewBox", boxsize);     
 
     } else {
-      svg.attr("width", width + margin.left + margin.right)
-         .attr("height", height + margin.top + margin.bottom);
+      svg.attr("width", width + margin.left + margin.right + padding.left)
+         .attr("height", height + margin.top + margin.bottom + padding.bottom);
     }
 
     const listenerSVG = svg;
@@ -164,7 +204,7 @@
     svg = svg  
     .append("g")
       .attr("transform",
-            "translate(" + margin.left + "," + margin.top + ")");
+            "translate(" + (margin.left + padding.left) + "," + margin.top + ")");
 
     
     
@@ -209,8 +249,11 @@
 
     console.log(axis);
     
-    if (Number.isInteger(axis[0])) xAxis = xAxis.ticks(axis[0]);
-    if (Number.isInteger(axis[2])) txAxis = txAxis.ticks(axis[2]);
+    if (ticks) xAxis = xAxis.tickValues(ticks[0]);
+    if (ticks) txAxis = txAxis.tickValues(ticks[2]);
+
+    if (!tickLabels[0]) xAxis = xAxis.tickFormat(x => ``);
+    if (!tickLabels[1]) txAxis = txAxis.tickFormat(x => ``);
 
     if (invertedTicks) {
       xAxis = xAxis.tickSizeInner(-ticklengths[0]).tickSizeOuter(0);
@@ -223,16 +266,19 @@
     if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis);
     if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis);
 
-      // Add Y axis
-      let y = d3.scaleLinear()
-      .domain(range[1])
-      .range([ height, 0 ]);
+    // Add Y axis
+    let y = d3.scaleLinear()
+    .domain(range[1])
+    .range([ height, 0 ]);
 
-      let yAxis = d3.axisLeft(y);
-      let ryAxis = d3.axisRight(y);
+    let yAxis = d3.axisLeft(y);
+    let ryAxis = d3.axisRight(y);
 
-    if (Number.isInteger(axis[1])) yAxis = yAxis.ticks(axis[1]);
-    if (Number.isInteger(axis[3])) ryAxis = ryAxis.ticks(axis[3]);
+    if (ticks) yAxis = yAxis.tickValues(ticks[1]);
+    if (ticks) ryAxis = ryAxis.tickValues(ticks[3]);
+
+    if (!tickLabels[2]) yAxis = yAxis.tickFormat(x => ``);
+    if (!tickLabels[3]) ryAxis = ryAxis.tickFormat(x => ``);    
     
     if (invertedTicks) {
       yAxis = yAxis.tickSizeInner(-ticklengths[1]).tickSizeOuter(0);
@@ -242,12 +288,82 @@
       ryAxis = ryAxis.tickSizeInner(ticklengths[3]).tickSizeOuter(0);      
     }
 
+    
 
     
     if (axis[1]) gY = svg.append("g").call(yAxis);
     if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis);
 
+    if (options.AxesLabel && !framed) {
+      options.AxesLabel = await interpretate(options.AxesLabel, env);
 
+      if (Array.isArray(options.AxesLabel)) {
+        if (options.AxesLabel[0] != 'None') {
+          gX.append("text")
+          .attr("x", width)
+          .attr("y", margin.bottom)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "end")
+          .text(options.AxesLabel[0]); 
+        }
+
+        if (options.AxesLabel[1] != 'None') {
+          gY.append("text")
+          .attr("x", 0)
+          .attr("y", -margin.top/2)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "start")
+          .text(options.AxesLabel[1]); 
+        }        
+ 
+      }
+
+    }
+
+    if (options.FrameLabel && framed) {
+      options.FrameLabel = await interpretate(options.FrameLabel, env);
+
+      if (Array.isArray(options.FrameLabel)) {
+        if (options.FrameLabel[0][0] != 'None') {
+          gX.append("text")
+          .attr("x", width/2)
+          .attr("y", margin.bottom)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "middle")
+          .text(options.FrameLabel[0][0]); 
+        }
+
+        if (options.FrameLabel[1][0] != 'None') {
+          gY.append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", -margin.left)
+          .attr("x", -height/2)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "middle")
+          .text(options.FrameLabel[1][0]); 
+        } 
+
+        if (options.FrameLabel[0][1] != 'None') {
+          gTX.append("text")
+          .attr("x", width/2)
+          .attr("y", margin.bottom)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "middle")
+          .text(options.FrameLabel[0][1]); 
+        }
+
+        if (options.FrameLabel[1][1] != 'None') {
+          gRY.append("text")
+          .attr("x", 0)
+          .attr("y", margin.bottom)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "middle")
+          .text(options.FrameLabel[1][1]); 
+        }        
+ 
+      }
+
+    } 
     //since FE object insolates env already, there is no need to make a copy
       env.context = g2d;
       env.svg = svg.append("g")
