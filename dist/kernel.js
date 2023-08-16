@@ -1091,6 +1091,10 @@ function arrDepth(arr) {
 
   g2d.Point.virtual = true;  
 
+  g2d.Null = (args, env) => {}
+  g2d.Null.destroy = g2d.Null
+  g2d.Null.update = g2d.Null
+
   g2d.EventListener = async (args, env) => {
     const options = await core._getRules(args, env);
 
@@ -1228,6 +1232,12 @@ function arrDepth(arr) {
     object.call(d3.drag()
         .on("start", clicked));
   };
+
+  g2d.EventListener.onload = (uid, object, env) => {
+
+    console.log('onload event generator');
+    server.emitt(uid, `True`);
+  };  
 
   g2d.EventListener.mousemove = (uid, object, env) => {
 

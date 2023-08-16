@@ -1121,6 +1121,12 @@
 
     return null;
   }
+  
+  g2d.EventListener.onload = (uid, object, env) => {
+
+    console.log('onload event generator');
+    server.emitt(uid, `True`);
+  };  
 
   g2d.MiddlewareListener = async (args, env) => {
     const options = await core._getRules(args, env);
