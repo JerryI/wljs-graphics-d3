@@ -124,6 +124,8 @@ function arrDepth(arr) {
       }
     }
 
+
+
     
     
     if (options.TickDirection) {
@@ -200,6 +202,22 @@ function arrDepth(arr) {
       range = await interpretate(options.PlotRange, env);
     }
 
+    if (options.FrameTicks && framed && !options.PlotRange) {
+      //shitty fix for MatrixPlot 
+      console.log('shitty fix for MatrixPLot');
+      range = [[0,1], [0,1]];
+      const test = [...options.FrameTicks].flat(Infinity);
+      console.log(test);
+      if (!isNaN(test[0])) {
+        const xx = options.FrameTicks[0].flat(Infinity);
+        const yy = options.FrameTicks[1].flat(Infinity);
+        console.log(xx);
+        console.log(yy);
+        range[0][1] = Math.max(...xx);
+        range[1][1] = Math.max(...yy);
+      }
+      console.log(range);
+    }
     
 
     let transitionType = d3.easeCubicInOut;
@@ -1091,10 +1109,6 @@ function arrDepth(arr) {
 
   g2d.Point.virtual = true;  
 
-  g2d.Null = (args, env) => {}
-  g2d.Null.destroy = g2d.Null
-  g2d.Null.update = g2d.Null
-
   g2d.EventListener = async (args, env) => {
     const options = await core._getRules(args, env);
 
@@ -1107,6 +1121,12 @@ function arrDepth(arr) {
 
     return null;
   };
+  
+  g2d.EventListener.onload = (uid, object, env) => {
+
+    console.log('onload event generator');
+    server.emitt(uid, `True`);
+  };  
 
   g2d.MiddlewareListener = async (args, env) => {
     const options = await core._getRules(args, env);
@@ -1232,12 +1252,6 @@ function arrDepth(arr) {
     object.call(d3.drag()
         .on("start", clicked));
   };
-
-  g2d.EventListener.onload = (uid, object, env) => {
-
-    console.log('onload event generator');
-    server.emitt(uid, `True`);
-  };  
 
   g2d.EventListener.mousemove = (uid, object, env) => {
 
@@ -1441,6 +1455,280 @@ function arrDepth(arr) {
   g2d.AbsolutePointSize     = g2d.Void;
   g2d.CopiedValueFunction   = g2d.Void;
 
- 
+  g2d.Raster = async (args, env) => {
+    if (env.image) return await interpretate(args[0], env);
 
-  console.log(g2d);
+    const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true});
+    console.log(args);
+    const height = data.length;
+    const width = data[0].length;
+    const rgb = data[0][0].length;
+
+    const x = env.xAxis;
+    const y = env.yAxis;    
+
+    let ranges = [[0, width],[0, height]];
+    if (args.length > 1) {
+      const optsRanges = await interpretate(args[1], env);
+      ranges[0][0] = optsRanges[0][0];
+      ranges[0][1] = optsRanges[1][0];
+      ranges[1][0] = optsRanges[0][1];
+      ranges[1][1] = optsRanges[1][1];      
+    }
+    if (args.length > 2) {
+      await interpretate(args[2], env);
+      //not implemented
+      console.warn('scaling is not implemented!');
+    }
+
+
+
+    const rectWidth = Math.abs((x(ranges[0][1]) - x(ranges[0][0])) / width);
+    const rectHeight = Math.abs((y(ranges[1][1]) - y(ranges[1][0])) / height);
+
+    const stepX = (ranges[0][1] - ranges[0][0]) / width;
+    const stepY = (ranges[1][1] - ranges[1][0]) / height;
+
+    const group = env.svg;
+
+    if (!rgb) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+
+          group.append('rect')
+          .attr('x', x(stepX * j + ranges[0][0]))
+          .attr('y', y(stepY * i + ranges[1][0])-rectHeight)
+          .attr('width', rectWidth)
+          .attr('height', rectHeight)
+          .attr('opacity', env.opacity)
+          .attr('fill', `rgb(${255*data[i][j]}, ${255*data[i][j]}, ${255*data[i][j]})`);
+          
+        }
+      }  
+      return;
+    }
+
+    if (rgb === 2) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+
+          group.append('rect')
+          .attr('x', x(stepX * j + ranges[0][0]))
+          .attr('y', y(stepY * i + ranges[1][0])-rectHeight)
+          .attr('width', rectWidth)
+          .attr('height', rectHeight)
+          .attr('opacity', data[i][j][1])
+          .attr('fill', `rgb(${255*data[i][j][0]}, ${255*data[i][j][0]}, ${255*data[i][j][0]})`);
+          
+        }
+      }  
+      return;
+    }    
+
+    if (rgb === 3) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+
+          group.append('rect')
+          .attr('x', x(stepX * j + ranges[0][0]))
+          .attr('y', y(stepY * i + ranges[1][0])-rectHeight)
+          .attr('width', rectWidth)
+          .attr('height', rectHeight)
+          .attr('opacity', env.opacity)
+          .attr('fill', `rgb(${255*data[i][j][0]}, ${255*data[i][j][1]}, ${255*data[i][j][2]})`);
+          
+        }
+      } 
+      return;
+    }
+
+    if (rgb === 4) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+
+          group.append('rect')
+          .attr('x', x(stepX * j + ranges[0][0]))
+          .attr('y', y(stepY * i + ranges[1][0])-rectHeight)
+          .attr('width', rectWidth)
+          .attr('height', rectHeight)
+          .attr('opacity', data[i][j][3])
+          .attr('fill', `rgb(${255*data[i][j][0]}, ${255*data[i][j][1]}, ${255*data[i][j][2]})`);
+          
+        }
+      } 
+      return;
+    }    
+  };
+
+  g2d.Raster.destroy = () => {};
+
+  g2d.Image = async (args, env) => {
+    const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true, image:true});
+    const height = data.length;
+    const width = data[0].length;
+    const rgb = data[0][0].length;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+  
+    env.element.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    // Get a pointer to the current location in the image.
+
+    env.local.ctx = ctx;
+    env.local.length = width*height*4;
+    env.local.width = width;
+    env.local.height = height;
+    env.local.rgb = rgb;
+
+    // Wrap your array as a Uint8ClampedArray
+    const rgba = new Uint8ClampedArray(width*height*4);
+  
+    //OH shitty slow Javascript, why...you do not have faster methods
+    //TODO: rewrite using webGL!!!
+    let index = 0;
+
+    if (!rgb) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+          //what am i doing
+          //after years of CUDA and FPGA programming I am writting a loop over an image array
+          //shit
+
+          rgba[index+0] = data[i][j]*255;
+          rgba[index+1] = data[i][j]*255;
+          rgba[index+2] = data[i][j]*255;
+          rgba[index+3] = 255;
+
+          index+=4;
+        }
+      }  
+
+      ctx.putImageData(new ImageData(rgba, width, height),0,0);
+      return;
+    }
+
+    if (rgb === 3) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+        
+          //what am i doing
+          //after years of CUDA and FPGA programming I am writting a loop over an image array
+          //shit
+
+          rgba[index+0] = data[i][j][0];
+          rgba[index+1] = data[i][j][1];
+          rgba[index+2] = data[i][j][2];
+          rgba[index+3] = 255;
+
+          index+=4;
+        }
+      }
+    }
+
+    if (rgb === 4) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+        
+          //what am i doing
+          //after years of CUDA and FPGA programming I am writting a loop over an image array
+          //shit
+
+          rgba[index+0] = data[i][j][0];
+          rgba[index+1] = data[i][j][1];
+          rgba[index+2] = data[i][j][2];
+          rgba[index+3] = data[i][j][3];
+
+          index+=4;
+        }
+      }
+    }    
+
+
+    // Repost the data.
+    ctx.putImageData(new ImageData(rgba, width, height),0,0);
+};
+
+g2d.Image.update = async (args, env) => {
+    const data = await interpretate(args[0], {...env, nfast:true, numeric:true, image:true});
+    const height = data.length;
+    const width = data[0].length;
+    const rgb = data[0][0].length;
+
+    const ctx = env.local.ctx;
+
+    // Wrap your array as a Uint8ClampedArray
+    const rgba = new Uint8ClampedArray(width*height*4);
+  
+    //OH shitty slow Javascript, why...you do not have faster methods
+    //TODO: rewrite using webGL!!!
+    let index = 0;
+
+    if (!rgb) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+          //what am i doing
+          //after years of CUDA and FPGA programming I am writting a loop over an image array
+          //shit
+
+          rgba[index+0] = data[i][j]*255;
+          rgba[index+1] = data[i][j]*255;
+          rgba[index+2] = data[i][j]*255;
+          rgba[index+3] = 255;
+
+          index+=4;
+        }
+      }  
+
+      ctx.putImageData(new ImageData(rgba, width, height),0,0);
+      return;
+    }
+
+  
+    if (rgb === 3) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+        
+          //what am i doing
+          //after years of CUDA and FPGA programming I am writting a loop over an image array
+          //shit
+
+          rgba[index+0] = data[i][j][0];
+          rgba[index+1] = data[i][j][1];
+          rgba[index+2] = data[i][j][2];
+          rgba[index+3] = 255;
+
+          index+=4;
+        }
+      }
+    }
+
+    if (rgb === 4) {
+      for (let i=0; i<height; ++i) {
+        for (let j=0; j<width; ++j) {
+        
+          //what am i doing
+          //after years of CUDA and FPGA programming I am writting a loop over an image array
+          //shit
+
+          rgba[index+0] = data[i][j][0];
+          rgba[index+1] = data[i][j][1];
+          rgba[index+2] = data[i][j][2];
+          rgba[index+3] = data[i][j][3];
+
+          index+=4;
+        }
+      }
+    }  
+
+
+    // Repost the data.
+    ctx.putImageData(new ImageData(rgba, width, height),0,0);
+};
+
+g2d.Image.destroy = (args, env) => interpretate(args[0], env);
+
+core.NumericArray = (args, env) => interpretate(args[0], env);
+core.NumericArray.update = core.NumericArray;
+core.NumericArray.destroy = core.NumericArray;

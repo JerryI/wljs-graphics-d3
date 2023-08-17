@@ -5,3 +5,4 @@ Unprotect[Graphics]
 Options[Graphics] = Flatten[{Options[Graphics], Controls->False}]
 
 RegisterWebObject[Graphics];
+RegisterWebObject[Image];
