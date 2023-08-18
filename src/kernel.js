@@ -428,9 +428,9 @@
 
 
 
-      await interpretate(options.Epilog, env);
-      await interpretate(args[0], env);
       await interpretate(options.Prolog, env); 
+      await interpretate(args[0], env);
+      await interpretate(options.Epilog, env);
   }
 
   const icoExport = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" class="w1 h1 mr1"><path d="M2 3C2 1.89543 2.89543 1 4 1H10L14 5V8H12V6H9V3H4V13H6V15H4C2.89543 15 2 14.1046 2 13V3Z"></path><path d="M7.3598 12.7682L8.64017 11.2318L11 13.1983L13.3598 11.2318L14.6402 12.7682L11 15.8017L7.3598 12.7682Z"></path><path d="M10 15L10 9L12 9L12 15L10 15Z"></path></svg>`
