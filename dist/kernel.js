@@ -16,7 +16,7 @@ function arrDepth(arr) {
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "Controls", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "Controls","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   
   });
@@ -66,6 +66,8 @@ function arrDepth(arr) {
     let tickLabels = [true, true, true, true];
     let ticks = undefined;
     let framed = false;
+    let axesstyle = undefined;
+    let ticksstyle = undefined;
 
     console.log(options);
 
@@ -267,9 +269,7 @@ function arrDepth(arr) {
       txAxis = txAxis.tickSizeInner(ticklengths[2]).tickSizeOuter(0); 
     }
 
-    if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis);
-    if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis);
-
+ 
     // Add Y axis
     let y = d3.scaleLinear()
     .domain(range[1])
@@ -294,9 +294,49 @@ function arrDepth(arr) {
 
     
 
+
+
+    env.context = g2d;
+    env.svg = svg.append("g");
+    env.xAxis = x;
+    env.yAxis = y;     
+    env.numerical = true;
+    env.tostring = false;
+    env.color = 'rgb(68, 68, 68)';
+    env.stroke = 'rgb(68, 68, 68)';
+    env.opacity = 1;
+    env.fontsize = 10;
+    env.fontfamily = 'sans-serif';
+    env.strokeWidth = 1.5;
+    env.pointSize = 0.013;
+    env.transition = {duration: 300, type: transitionType};
+
+    axesstyle = {...env};
+    ticksstyle = {...env};
+
+    if (options.AxesStyle) {
+      await interpretate(options.AxesStyle, axesstyle);
+    }
+
+    if (options.FrameStyle) {
+      console.warn('FrameStyle');
+      console.log(options.FrameStyle);
+      //console.log(JSON.stringify(axesstyle));
+      await interpretate(options.FrameStyle, axesstyle);
+      console.log(axesstyle);
+    }    
+
+    if (options.FrameTicksStyle) {
+      await interpretate(options.FrameTicksStyle, ticksstyle);
+    }
+
+    if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
+    if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     
-    if (axis[1]) gY = svg.append("g").call(yAxis);
-    if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis);
+    if (axis[1]) gY = svg.append("g").call(yAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
+    if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
+
+
 
     if (options.AxesLabel && !framed) {
       options.AxesLabel = await interpretate(options.AxesLabel, env);
@@ -306,18 +346,20 @@ function arrDepth(arr) {
           g2d.Text.PutText(gX.append("text")
           .attr("x", width)
           .attr("y", margin.bottom)
-          .attr("fill", "currentColor")
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
           .attr("text-anchor", "end")
-          , options.AxesLabel[0], {fontsize:14}); 
+          , options.AxesLabel[0], axesstyle); 
         }
 
         if (options.AxesLabel[1] != 'None') {
           g2d.Text.PutText(gY.append("text")
           .attr("x", 0)
           .attr("y", -margin.top/2)
-          .attr("fill", "currentColor")
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
           .attr("text-anchor", "start")
-          , options.AxesLabel[1], {fontsize:14}); 
+          , options.AxesLabel[1], axesstyle); 
         }        
  
       }
@@ -332,9 +374,10 @@ function arrDepth(arr) {
           g2d.Text.PutText(gX.append("text")
           .attr("x", width/2)
           .attr("y", margin.bottom)
-          .attr("fill", "currentColor")
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
-          , options.FrameLabel[1][0], {fontsize: 14}); 
+          , options.FrameLabel[1][0], axesstyle); 
         }
 
         if (options.FrameLabel[0][0] != 'None') {
@@ -342,9 +385,10 @@ function arrDepth(arr) {
           .attr("transform", "rotate(-90)")
           .attr("y", -margin.left)
           .attr("x", -height/2)
-          .attr("fill", "currentColor")
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
-          , options.FrameLabel[0][0], {fontsize: 14}); 
+          , options.FrameLabel[0][0], axesstyle); 
         } 
 
         if (options.FrameLabel[1][1] != 'None') {
@@ -352,9 +396,10 @@ function arrDepth(arr) {
           gTX.append("text")
           .attr("x", width/2)
           .attr("y", margin.bottom)
-          .attr("fill", "currentColor")
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
-          , options.FrameLabel[1][1], {fontsize: 14});
+          , options.FrameLabel[1][1], axesstyle);
         }
 
         if (options.FrameLabel[0][1] != 'None') {
@@ -362,29 +407,18 @@ function arrDepth(arr) {
             gRY.append("text")
               .attr("x", 0)
               .attr("y", margin.bottom)
-              .attr("fill", "currentColor")
+              .attr("font-size", axesstyle.fontsize)
+              .attr("fill", axesstyle.color)
               .attr("text-anchor", "middle"),
             
-            options.FrameLabel[0][1], {fontsize: 14});
+            options.FrameLabel[0][1], axesstyle);
         }        
  
       }
 
     } 
     //since FE object insolates env already, there is no need to make a copy
-      env.context = g2d;
-      env.svg = svg.append("g");
-      env.xAxis = x;
-      env.yAxis = y;     
-      env.numerical = true;
-      env.tostring = false;
-      env.color = 'black';
-      env.stroke = 'black';
-      env.opacity = 1;
-      env.fontsize = 14;
-      env.strokeWidth = 1.5;
-      env.pointSize = 0.013;
-      env.transition = {duration: 300, type: transitionType};
+
       
       if (options.TransitionDuration) {
         env.transition.duration = await interpretate(options.TransitionDuration, env);
@@ -563,6 +597,7 @@ function arrDepth(arr) {
 
   g2d.Text.PutText = (object, text, env) => {
     //parse the text
+    if (!text) return;
     const tokens = [g2d.Text.TokensSplit(text.replaceAll(/\\([a-zA-z]+)/g, g2d.Text.GreekReplacer), g2d.Text.TextOperators)].flat(Infinity);
     console.log(tokens);
 
@@ -605,7 +640,7 @@ function arrDepth(arr) {
       handler: (a) => a,
       regexp: /\_(\d{1,3})/,
       meta: {
-        ky: -0.75,
+        ky: -0.5,
         kf: 0.5
       }      
     },
@@ -614,7 +649,7 @@ function arrDepth(arr) {
       handler: (a) => a,
       regexp: /\_{([^{|}]*)}/,
       meta: {
-        ky: -0.75,
+        ky: -0.5,
         kf: 0.5
       }
     }  
@@ -695,8 +730,13 @@ function arrDepth(arr) {
   g2d.Annotation = core.List;
 
   g2d.Directive = async (args, env) => {
-    for (const el of args) {
-      await interpretate(el, env);
+    const opts = await core._getRules(args, env);
+    for (const o of Object.keys(opts)) {
+      env[o.toLowerCase()] = opts[o];
+    }
+
+    for (let i=0; i<(args.length - Object.keys(opts).length); ++i) {
+      await interpretate(args[i], env);
     }
   };
 
