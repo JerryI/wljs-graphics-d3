@@ -35,6 +35,20 @@
   
   });
 
+  g2d.Offset = async (args, env) => {
+    const list = await interpretate(args[1], env);
+
+    env.offset = {
+      x: env.xAxis(list[0]) - env.xAxis(0),
+      y: env.yAxis(list[1]) - env.yAxis(0)
+    };
+
+    return await interpretate(args[0], env);
+  }
+
+  g2d.Offset.destroy = g2d.Offset
+  g2d.Offset.update = g2d.Offset
+
   g2d.Graphics = async (args, env) => {
     if (!d3) d3 = await import('d3');
     if (!interpolatePath) interpolatePath = (await import('d3-interpolate-path')).interpolatePath;
@@ -189,8 +203,14 @@
     let height = ImageSize[1] - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
-    let svg = d3.select(container)
-    .append("svg");
+    let svg;
+    
+    
+    if (env.inset) 
+      svg = env.inset.append("svg");
+    else
+      svg = d3.select(container).append("svg");
+
 
     if ('ViewBox' in options) {
 
@@ -316,6 +336,7 @@
     env.yAxis = y;     
     env.numerical = true;
     env.tostring = false;
+    env.offset = {x: 0, y: 0};
     env.color = 'rgb(68, 68, 68)';
     env.stroke = 'rgb(68, 68, 68)';
     env.opacity = 1;
@@ -353,27 +374,32 @@
 
 
     if (options.AxesLabel && !framed) {
-      options.AxesLabel = await interpretate(options.AxesLabel, env);
+      
+      options.AxesLabel = await interpretate(options.AxesLabel, {...env, hold:true});
 
       if (Array.isArray(options.AxesLabel)) {
-        if (options.AxesLabel[0] != 'None') {
+        let temp = {...env};
+        let value = await interpretate(options.AxesLabel[0], temp);
+        if (value != 'None') {
           g2d.Text.PutText(gX.append("text")
-          .attr("x", width)
-          .attr("y", margin.bottom)
+          .attr("x", width + temp.offset.x)
+          .attr("y", margin.bottom + temp.offset.y)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "end")
-          , options.AxesLabel[0], axesstyle); 
+          , value, axesstyle); 
         }
 
-        if (options.AxesLabel[1] != 'None') {
+        temp = {...env};
+        value = await interpretate(options.AxesLabel[1], temp);        
+        if (value != 'None') {
           g2d.Text.PutText(gY.append("text")
-          .attr("x", 0)
-          .attr("y", -margin.top/2)
+          .attr("x", 0 + temp.offset.x)
+          .attr("y", -margin.top/2 + temp.offset.y)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "start")
-          , options.AxesLabel[1], axesstyle); 
+          , value, axesstyle); 
         }        
  
       }
@@ -381,51 +407,69 @@
     }
 
     if (options.FrameLabel && framed) {
-      options.FrameLabel = await interpretate(options.FrameLabel, env);
+      options.FrameLabel = await interpretate(options.FrameLabel, {...env, hold:true});
 
       if (Array.isArray(options.FrameLabel)) {
-        if (options.FrameLabel[1][0] != 'None') {
-          g2d.Text.PutText(gX.append("text")
-          .attr("x", width/2)
-          .attr("y", margin.bottom)
-          .attr("font-size", axesstyle.fontsize)
-          .attr("fill", axesstyle.color)
-          .attr("text-anchor", "middle")
-          , options.FrameLabel[1][0], axesstyle); 
-        }
+        const lb = await interpretate(options.FrameLabel[0], {...env, hold:true});
+        const rt = await interpretate(options.FrameLabel[1], {...env, hold:true});
+        
 
-        if (options.FrameLabel[0][0] != 'None') {
+
+        let temp = {...env};
+        let value = await interpretate(lb[0], temp);
+
+        if (value != 'None') {
           g2d.Text.PutText(gY.append("text")
           .attr("transform", "rotate(-90)")
-          .attr("y", -margin.left)
-          .attr("x", -height/2)
+          .attr("y", -margin.left + temp.offset.x)
+          .attr("x", -height/2 - temp.offset.y)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
-          , options.FrameLabel[0][0], axesstyle); 
+          , value, axesstyle); 
         } 
 
-        if (options.FrameLabel[1][1] != 'None') {
-          g2d.Text.PutText(
-          gTX.append("text")
-          .attr("x", width/2)
-          .attr("y", margin.bottom)
-          .attr("font-size", axesstyle.fontsize)
-          .attr("fill", axesstyle.color)
-          .attr("text-anchor", "middle")
-          , options.FrameLabel[1][1], axesstyle);
-        }
 
-        if (options.FrameLabel[0][1] != 'None') {
+        temp = {...env};
+        value = await interpretate(lb[1], temp);
+
+        if (value != 'None') {
           g2d.Text.PutText(
             gRY.append("text")
-              .attr("x", 0)
-              .attr("y", margin.bottom)
+              .attr("x", 0 + temp.offset.x)
+              .attr("y", margin.bottom + temp.offset.y)
               .attr("font-size", axesstyle.fontsize)
               .attr("fill", axesstyle.color)
               .attr("text-anchor", "middle"),
             
-            options.FrameLabel[0][1], axesstyle);
+            value, axesstyle);
+        }   
+
+        temp = {...env};
+        value = await interpretate(rt[1], temp);        
+        
+        if (value != 'None') {
+          g2d.Text.PutText(
+          gTX.append("text")
+          .attr("x", width/2 + temp.offset.x)
+          .attr("y", margin.bottom + temp.offset.y)
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
+          .attr("text-anchor", "middle")
+          , value, axesstyle);
+        }
+
+        temp = {...env};
+        value = await interpretate(rt[0], temp);        
+
+        if (value != 'None') {
+          g2d.Text.PutText(gX.append("text")
+          .attr("x", width/2 + temp.offset.x)
+          .attr("y", margin.bottom + temp.offset.y)
+          .attr("font-size", axesstyle.fontsize)
+          .attr("fill", axesstyle.color)
+          .attr("text-anchor", "middle")
+          , value, axesstyle); 
         }        
  
       }
@@ -447,7 +491,7 @@
           addPanZoom(listenerSVG, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
       }
 
-      if (core._NotebookUI) {
+      if (core._NotebookUI && !env.inset) {
         const controls = document.createElement('div');
         controls.classList.add('d3-controls');
 
@@ -472,6 +516,14 @@
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); }
   g2d.Graphics.destroy = (args, env) => { interpretate(args[0], {...env, context: g2d}); }
 
+  g2d.Inset = async (args, env) => {
+    const co = await interpretate(args[1], env);
+
+    const group = env.svg.append('g');
+    await interpretate(args[0], {...env, inset: group});
+
+    return group.attr("transform", "translate(" + (env.xAxis(co[0])) + "," + (env.yAxis(co[1])) + ")");
+  }
 
   const serialize = (svg) => {
     const xmlns = "http://www.w3.org/2000/xmlns/";
