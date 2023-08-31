@@ -769,6 +769,25 @@ function arrDepth(arr) {
     } 
   
     return await interpretate(args[0], env);
+  };
+
+  g2d.Style.destroy = async (args, env) => {
+    await core._getRules(args, env);  
+    return await interpretate(args[0], env);
+  };  
+  
+  g2d.Style.update = async (args, env) => {
+    const options = await core._getRules(args, env);
+    
+    if (options.FontSize) {
+      env.fontsize = options.FontSize;
+    }  
+  
+    if (options.FontFamily) {
+      env.fontfamily = options.FontFamily;
+    } 
+  
+    return await interpretate(args[0], env);
   };  
 
   g2d.AbsoluteThickness = (args, env) => {
@@ -1509,6 +1528,11 @@ function arrDepth(arr) {
 
     return env.local.rect;
      
+  };
+
+  g2d.Rectangle.destroy = async (args, env) => {
+    await interpretate(args[0], env);
+    await interpretate(args[1], env);
   };
   
   g2d.Rectangle.update = async (args, env) => {
