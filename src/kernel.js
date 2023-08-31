@@ -1231,6 +1231,10 @@
 
     return null;
   }
+
+  g2d.EventListener.update = async (args, env) => {
+    console.log('EventListener does not support updates');
+  }
   
   g2d.EventListener.onload = (uid, object, env) => {
 
@@ -1281,8 +1285,8 @@
 
     console.log('drag event generator');
     console.log(env.local);
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
 
     let origin = [];
 
@@ -1315,8 +1319,8 @@
 
     console.log('drag event generator');
     console.log(env.local);
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
 
     function dragstarted(event, d) {
       //d3.select(this).raise().attr("stroke", "black");
@@ -1348,8 +1352,8 @@
 
     console.log('click event generator');
     console.log(env.local);
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
       server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
@@ -1367,8 +1371,8 @@
 
     console.log('mouse event generator');
     console.log(env.local);
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
       server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'));
@@ -1385,8 +1389,8 @@
 
     console.log('mouse event generator');
     console.log(env.local);
-    const xAxis = env.local.xAxis;
-    const yAxis = env.local.yAxis;
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
       server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
