@@ -525,6 +525,10 @@
     return group.attr("transform", "translate(" + (env.xAxis(co[0])) + "," + (env.yAxis(co[1])) + ")");
   }
 
+  g2d.Inset.destroy = async (args, env) => {
+    console.warn('Destory method is not supported for Inset');
+  }
+
   const serialize = (svg) => {
     const xmlns = "http://www.w3.org/2000/xmlns/";
     const xlinkns = "http://www.w3.org/1999/xlink";
