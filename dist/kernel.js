@@ -133,7 +133,7 @@ function arrDepth(arr) {
       //left,right,  bottom,top
       if (Array.isArray(options.FrameTicks)) {
         if (Array.isArray(options.FrameTicks[0])) {
-          if (Number.isInteger(options.FrameTicks[0][0][0])) {
+          if (Number.isInteger(options.FrameTicks[0][0][0]) || Array.isArray(options.FrameTicks[0][0][0])) {
             ticks = [options.FrameTicks[0][0], options.FrameTicks[1][0], options.FrameTicks[0][1], options.FrameTicks[1][1]];
           }
         }
@@ -275,8 +275,26 @@ function arrDepth(arr) {
 
     console.log(axis);
     
-    if (ticks) xAxis = xAxis.tickValues(ticks[0]);
-    if (ticks) txAxis = txAxis.tickValues(ticks[2]);
+    if (ticks) {
+      if (Array.isArray(ticks[0][0])) {
+        const labels = ticks[0].map((el) => el[1]);
+        xAxis = xAxis.tickValues(ticks[0].map((el) => el[0])).tickFormat(function (d, i) {
+          return labels[i];
+        });
+      } else {
+        xAxis = xAxis.tickValues(ticks[0]);
+      }      
+    }
+    if (ticks) {
+      if (Array.isArray(ticks[2][0])) {
+        const labels = ticks[2].map((el) => el[1]);
+        txAxis = txAxis.tickValues(ticks[2].map((el) => el[0])).tickFormat(function (d, i) {
+          return labels[i];
+        });
+      } else {
+        txAxis = txAxis.tickValues(ticks[2]);
+      }
+    }
 
     if (!tickLabels[0]) xAxis = xAxis.tickFormat(x => ``);
     if (!tickLabels[1]) txAxis = txAxis.tickFormat(x => ``);
@@ -298,8 +316,27 @@ function arrDepth(arr) {
     let yAxis = d3.axisLeft(y);
     let ryAxis = d3.axisRight(y);
 
-    if (ticks) yAxis = yAxis.tickValues(ticks[1]);
-    if (ticks) ryAxis = ryAxis.tickValues(ticks[3]);
+    if (ticks) {
+      if (Array.isArray(ticks[1][0])) {
+        const labels = ticks[1].map((el) => el[1]);
+        yAxis = yAxis.tickValues(ticks[1].map((el) => el[0])).tickFormat(function (d, i) {
+          return labels[i];
+        });
+      } else {
+        yAxis = yAxis.tickValues(ticks[1]);
+      }  
+    }
+
+    if (ticks) {
+      if (Array.isArray(ticks[3][0])) {
+        const labels = ticks[3].map((el) => el[1]);
+        ryAxis = ryAxis.tickValues(ticks[3].map((el) => el[0])).tickFormat(function (d, i) {
+          return labels[i];
+        });
+      } else {
+        ryAxis = ryAxis.tickValues(ticks[3]);
+      }        
+    }
 
     if (!tickLabels[2]) yAxis = yAxis.tickFormat(x => ``);
     if (!tickLabels[3]) ryAxis = ryAxis.tickFormat(x => ``);    
