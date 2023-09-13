@@ -1728,13 +1728,27 @@ function arrDepth(arr) {
     const height = data.length;
     const width = data[0].length;
     const rgb = data[0][0].length;
+    let ctx;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-  
-    env.element.appendChild(canvas);
-    const ctx = canvas.getContext("2d");
+
+    if (env.inset) {
+      const foreignObject = env.inset.append('foreignObject')
+      .attr('width', width)
+      .attr('height', height);
+    
+      const canvas = foreignObject.append('xhtml:canvas')
+      .attr('xmlns', 'http://www.w3.org/1999/xhtml');
+
+      ctx = canvas.node().getContext('2d');
+    } else {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;      
+      env.element.appendChild(canvas);
+      ctx  = canvas.getContext("2d");
+    }
+    
+    
     // Get a pointer to the current location in the image.
 
     env.local.ctx = ctx;
