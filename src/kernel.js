@@ -447,13 +447,16 @@
       options.FrameLabel = await interpretate(options.FrameLabel, {...env, hold:true});
 
       if (Array.isArray(options.FrameLabel)) {
+
         const lb = await interpretate(options.FrameLabel[0], {...env, hold:true});
         const rt = await interpretate(options.FrameLabel[1], {...env, hold:true});
         
+        let temp;
+        let value;
 
-
-        let temp = {...env};
-        let value = await interpretate(lb[0], temp);
+      if (lb != 'None') {
+        temp = {...env};
+        value = await interpretate(lb[0], temp);
 
         if (value != 'None') {
           g2d.Text.PutText(gY.append("text")
@@ -480,7 +483,10 @@
               .attr("text-anchor", "middle"),
             
             value, axesstyle);
-        }   
+        } 
+      }  
+
+      if (rt != 'None') {
 
         temp = {...env};
         value = await interpretate(rt[1], temp);        
@@ -507,7 +513,9 @@
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
           , value, axesstyle); 
-        }        
+        }   
+         
+      }    
  
       }
 
