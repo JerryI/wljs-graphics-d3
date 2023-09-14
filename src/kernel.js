@@ -454,7 +454,7 @@
         let temp;
         let value;
 
-      if (lb != 'None') {
+      if (lb != 'None' && lb) {
         temp = {...env};
         value = await interpretate(lb[0], temp);
 
@@ -486,7 +486,7 @@
         } 
       }  
 
-      if (rt != 'None') {
+      if (rt != 'None' && rt) {
 
         temp = {...env};
         value = await interpretate(rt[1], temp);        
