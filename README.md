@@ -1,4 +1,4 @@
-# Graphics Parser based on D3.js & Plotly
+# Graphics Parser based on D3.js
 *written with love in Javascript*
 
 ![Img](imgs/intro.gif)
@@ -11,15 +11,7 @@ but one can try to use it independently as well
 ## Features
 There are a lot of functions, which are not implemented such as `Style[]`, many primitives and etc. However the minimal set for the functioning of `Plot`, line and point primitives is already done.
 
-### Alternative to Mathematica's plotting functions
-The biggest disadvantage of the native functions is lack of easy pan, zoom controls. Therefore the subset of `Plotly` functions was created
 
-- `Plotly[Expr, Range]`
-- `ListPlotly[Expr]`
-- `ListLinePlotly[Expr]`
-that results in a window, where you can have full control over the data view
-
-![img](imgs/plotly.png)
 
 ### Graphics support
 Native Mathematica's plotting functions in the ends generate `Graphics` expressing with a recipy to cook the desired plot using primitives `Line`, `Point` and etc. Curnetly, the following primitives are supported relying on D3 library API
