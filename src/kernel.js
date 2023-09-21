@@ -817,8 +817,10 @@
 
   g2d.FontSize = () => "FontSize"
   g2d.FontSize.destroy = g2d.FontSize
+  g2d.FontSize.update = g2d.FontSize
   g2d.FontFamily = () => "FontFamily"
   g2d.FontFamily.destroy = g2d.FontFamily
+  g2d.FontFamily.update = g2d.FontFamily
   
   g2d.Style = async (args, env) => {
     const options = await core._getRules(args, env);
