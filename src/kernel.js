@@ -1326,6 +1326,10 @@
     return interpretate(args[0], env);
   }
 
+  g2d.MiddlewareListener.destroy = (args, env) => {
+    return interpretate(args[0], env);
+  }  
+
   g2d.MiddlewareListener.end = (uid, params, env) => {
     const threshold = params.Threshold || 1.0;
     
