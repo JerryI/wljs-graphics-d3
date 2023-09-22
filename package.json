@@ -1,6 +1,6 @@
 {
   "name": "wljs-graphics-d3",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "D3 implementation of Mathematica's Graphics",
   "scripts": {
     "build": "node --max-old-space-size=8192 ./node_modules/.bin/rollup --config rollup.config.mjs",
@@ -28,6 +28,7 @@
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",
     "d3": "^7.8.2",
+    "d3-arrow": "^0.0.25",
     "d3-interpolate-path": "^2.3.0",
     "rollup": "^3.20.6",
     "rollup-plugin-combine": "^2.1.1",

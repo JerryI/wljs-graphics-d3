@@ -30,8 +30,10 @@
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "Controls","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
+  g2d[name].destroy = () => name;
+  g2d[name].update = () => name;
   
   });
 
@@ -133,7 +135,7 @@
       //left, bottom
       if (Array.isArray(options.Ticks)) {
         if (Array.isArray(options.Ticks[0])) {
-          if (Number.isInteger(options.Ticks[0][0])) {
+          if (Number.isInteger(options.Ticks[0][0]) || Array.isArray(options.Ticks[0][0])) {
             ticks = [...options.Ticks, ...options.Ticks];
           }
         }
@@ -677,7 +679,84 @@
   g2d.SVGAttribute.virtual = true;
 
 
+  const lab2rgb = (lab) => {
+    var y = (lab[0] + 16) / 116,
+        x = lab[1] / 500 + y,
+        z = y - lab[2] / 200,
+        r, g, b;
+  
+    x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16/116) / 7.787);
+    y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16/116) / 7.787);
+    z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16/116) / 7.787);
+  
+    r = x *  3.2406 + y * -1.5372 + z * -0.4986;
+    g = x * -0.9689 + y *  1.8758 + z *  0.0415;
+    b = x *  0.0557 + y * -0.2040 + z *  1.0570;
+  
+    r = (r > 0.0031308) ? (1.055 * Math.pow(r, 1/2.4) - 0.055) : 12.92 * r;
+    g = (g > 0.0031308) ? (1.055 * Math.pow(g, 1/2.4) - 0.055) : 12.92 * g;
+    b = (b > 0.0031308) ? (1.055 * Math.pow(b, 1/2.4) - 0.055) : 12.92 * b;
+  
+    return [Math.max(0, Math.min(1, r)) * 255, 
+            Math.max(0, Math.min(1, g)) * 255, 
+            Math.max(0, Math.min(1, b)) * 255]
+  }
 
+  g2d.LABColor =  async (args, env) => {
+    let lab;
+    if (args.length > 1)
+      lab = [await interpretate(args[0], env), await interpretate(args[1], env), await interpretate(args[2], env)];
+    else 
+      lab = await interpretate(args[0], env);
+
+    const color = lab2rgb(lab.map(e => e*255.0));
+    console.log('LAB color');
+    console.log(color);
+    
+    env.color = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+    if (args.length > 3) env.opacity = await interpretate(args[3], env);
+    
+    return env.color;   
+  }
+
+  g2d.LABColor.update = () => {}
+  g2d.LABColor.destroy = () => {}
+
+  g2d.arrowGenerator = undefined
+
+  let arrow1;
+
+  g2d.Arrow = async (args, env) => {
+    if (!arrow1) arrow1 = (await import('d3-arrow')).arrow1;
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    const uid = uuidv4();
+    const arrow = arrow1()
+    .id(uid)
+    .attr("fill", env.color)
+    .attr("stroke", "none");
+
+    env.svg.call(arrow);
+
+    const path = await interpretate(args[0], env);
+
+    const object = env.svg.append("path")
+    .datum(path)
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr("fill", "none")
+    .attr('opacity', env.opacity)
+    .attr("stroke", env.color)
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", d3.line()
+      .x(function(d) { return x(d[0]) })
+      .y(function(d) { return y(d[1]) })
+    ).attr("marker-end", "url(#"+uid+")"); 
+    
+    return object;
+
+  }
 
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
