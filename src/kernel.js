@@ -758,6 +758,14 @@
 
   }
 
+  g2d.Arrowheads = async () => {
+    console.warn('not implemented!');
+  }
+
+  g2d.Arrowheads.destroy = async () => {};
+
+  g2d.Arrow.destroy = async () => {}  
+
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
