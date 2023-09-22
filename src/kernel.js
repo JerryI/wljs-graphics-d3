@@ -375,7 +375,7 @@
     env.tostring = false;
     env.offset = {x: 0, y: 0};
     env.color = 'rgb(68, 68, 68)';
-    env.stroke = 'rgb(68, 68, 68)';
+    env.stroke = undefined;
     env.opacity = 1;
     env.fontsize = 10;
     env.fontfamily = 'sans-serif';
@@ -855,6 +855,28 @@
     return await interpretate(args[0], env);
   }  
 
+  g2d.GraphicsComplex = async (args, env) => {
+    const vertices = await interpretate(args[0], env);
+    return await interpretate(args[1], {...env, vertices: vertices});
+  }
+
+  g2d.GraphicsComplex.destroy = async (args, env) => {
+    await interpretate(args[0], env);
+    await interpretate(args[1], env);
+  }
+
+  g2d.GraphicsGroup = async (args, env) => {
+    return await interpretate(args[0], env);
+  }
+
+  g2d.GraphicsGroup.update = async (args, env) => {
+    return await interpretate(args[0], env);
+  }  
+
+  g2d.GraphicsGroup.destroy = async (args, env) => {
+    await interpretate(args[0], env);
+  }  
+
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
   }
@@ -883,7 +905,11 @@
     await interpretate(args[0], copy);
 
     env.strokeWidth = copy.strokeWidth;
-    env.stroke = copy.color;
+    
+    env.strokeOpacity = copy.opacity;
+    //hack. sorry
+    if (copy.color !== 'rgb(68, 68, 68)')
+      env.stroke = copy.color;
   }
 
   g2d.Opacity = async (args, env) => {
@@ -942,8 +968,38 @@
   g2d.CubicInOut = () => 'CubicInOut'
   g2d.Linear = () => 'Linear'
 
+  g2d.Tooltip = () => {
+    console.log('Tooltip is not implemented.');
+  }
+
+  g2d.Tooltip.destroy = g2d.Tooltip
+
   g2d.Polygon = async (args, env) => {
-    const points = await interpretate(args[0], env);
+    let points = await interpretate(args[0], env);
+
+    if (env.vertices) {
+      env.local.line = d3.line()
+      .x(function(d) { return env.xAxis(d[0]) })
+      .y(function(d) { return env.yAxis(d[1]) });
+
+      const array = [];
+
+      points.forEach((path) => {
+        array.push(env.svg.append("path")
+          .datum(path.map((vert) => env.vertices[vert-1]))
+          .attr("fill", env.color)
+          .attr('fill-opacity', env.opacity)
+          .attr('stroke-opacity', env.strokeOpacity || env.opacity)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("stroke-width", env.strokeWidth)
+          .attr("stroke", env.stroke || env.color)
+          .attr("d", env.local.line));
+
+      });
+
+      env.local.area = array;
+      return env.local.area;
+    }
   
     points.push(points[0]);
     
@@ -954,10 +1010,11 @@
     env.local.area = env.svg.append("path")
       .datum(points)
       .attr("fill", env.color)
-      .attr('opacity', env.opacity)
+      .attr('fill-opacity', env.opacity)
+      .attr('stroke-opacity', env.strokeOpacity || env.opacity)
       .attr("vector-effect", "non-scaling-stroke")
-      .attr("stroke", env.stroke)
       .attr("stroke-width", env.strokeWidth)
+      .attr("stroke", env.stroke || env.color)
       .attr("d", env.local.line);
     
     
@@ -966,6 +1023,10 @@
   
   g2d.Polygon.update = async (args, env) => {
     let points = await interpretate(args[0], env);
+
+    if (env.vertices) {
+      throw 'update method of vertices is not supported'
+    }    
   
     const x = env.xAxis;
     const y = env.yAxis;
