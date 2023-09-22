@@ -1222,15 +1222,20 @@ function arrDepth(arr) {
     const x = env.xAxis;
     const y = env.yAxis;
 
-
-    const dp = arrDepth(data);
-    if (dp === 0) {
-        data = [];
+    if (env.vertices) {
+      data = data.map((e) => env.vertices[e-1]);
     } else {
-      if (dp < 2) {
-        data = [data];
+      const dp = arrDepth(data);
+      if (dp === 0) {
+          data = [];
+      } else {
+        if (dp < 2) {
+          data = [data];
+        }
       }
     }
+
+
 
     const uid = uuidv4();
     env.local.uid = uid;
@@ -1276,6 +1281,8 @@ function arrDepth(arr) {
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
     
+    if (env.vertices) throw('vertices update method is not supported!');
+
     const dp = arrDepth(data);
     if (dp === 0) {
         data = [];
