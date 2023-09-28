@@ -571,12 +571,23 @@
     const group = env.svg.append('g');
     await interpretate(args[0], {...env, inset: group});
 
+    env.local.group = group;
+
     return group.attr("transform", "translate(" + (env.xAxis(co[0])) + "," + (env.yAxis(co[1])) + ")");
+  }
+
+  g2d.Inset.update = async (args, env) => {
+    const co = await interpretate(args[1], env);
+
+    env.local.group.attr("transform", "translate(" + (env.xAxis(co[0])) + "," + (env.yAxis(co[1])) + ")");
+    return env.local.group;
   }
 
   g2d.Inset.destroy = async (args, env) => {
     console.warn('Destory method is not supported for Inset');
   }
+
+  g2d.Inset.virtual = true
 
   const serialize = (svg) => {
     const xmlns = "http://www.w3.org/2000/xmlns/";
