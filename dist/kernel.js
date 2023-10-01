@@ -16,7 +16,7 @@ function arrDepth(arr) {
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "Plot", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -996,6 +996,14 @@ function arrDepth(arr) {
     //hack. sorry
     if (copy.color !== 'rgb(68, 68, 68)')
       env.stroke = copy.color;
+  };
+
+  g2d.EdgeForm.update = async (args, env) => {
+
+  };
+
+  g2d.EdgeForm.destroy = async (args, env) => {
+
   };
 
   g2d.Opacity = async (args, env) => {
