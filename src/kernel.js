@@ -30,7 +30,7 @@
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "Tiny", "Antialiasing","Small", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -45,7 +45,13 @@
       y: env.yAxis(list[1]) - env.yAxis(0)
     };
 
-    return await interpretate(args[0], env);
+    const data = await interpretate(args[0], env);
+    if (Array.isArray(data)) {
+      const res = data.map((el, i) => el-list[i]);
+      return res;
+    }
+
+    return data;
   }
 
   g2d.Offset.destroy = g2d.Offset
@@ -239,7 +245,8 @@
     let range = [[-1.15,1.15],[-1.15,1.15]];
 
     if (options.PlotRange) {
-      range = await interpretate(options.PlotRange, env);
+      const r = await interpretate(options.PlotRange, env);
+      if (Number.isFinite(r[0][0])) range = r;
     }
 
     if (options.FrameTicks && framed && !options.PlotRange) {
@@ -421,7 +428,7 @@
       if (Array.isArray(options.AxesLabel)) {
         let temp = {...env};
         let value = await interpretate(options.AxesLabel[0], temp);
-        if (value != 'None') {
+        if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
           .attr("x", width + temp.offset.x)
           .attr("y", margin.bottom + temp.offset.y)
@@ -433,7 +440,7 @@
 
         temp = {...env};
         value = await interpretate(options.AxesLabel[1], temp);        
-        if (value != 'None') {
+        if (value != 'None' && gY) {
           g2d.Text.PutText(gY.append("text")
           .attr("x", 0 + temp.offset.x)
           .attr("y", -margin.top/2 + temp.offset.y)
@@ -462,7 +469,7 @@
         temp = {...env};
         value = await interpretate(lb[0], temp);
 
-        if (value != 'None') {
+        if (value != 'None' && gY) {
           g2d.Text.PutText(gY.append("text")
           .attr("transform", "rotate(-90)")
           .attr("y", -margin.left + temp.offset.x)
@@ -477,7 +484,7 @@
         temp = {...env};
         value = await interpretate(lb[1], temp);
 
-        if (value != 'None') {
+        if (value != 'None' && gRY) {
           g2d.Text.PutText(
             gRY.append("text")
               .attr("x", 0 + temp.offset.x)
@@ -495,7 +502,7 @@
         temp = {...env};
         value = await interpretate(rt[1], temp);        
         
-        if (value != 'None') {
+        if (value != 'None' && gTX) {
           g2d.Text.PutText(
           gTX.append("text")
           .attr("x", width/2 + temp.offset.x)
@@ -509,7 +516,7 @@
         temp = {...env};
         value = await interpretate(rt[0], temp);        
 
-        if (value != 'None') {
+        if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
           .attr("x", width/2 + temp.offset.x)
           .attr("y", margin.bottom + temp.offset.y)
@@ -1165,9 +1172,12 @@
 
   g2d.Line = async (args, env) => {
     console.log('drawing a line');
+    
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
     const y = env.yAxis;
+
+    
 
     const uid = uuidv4();
     env.local.uid = uid;
@@ -1195,6 +1205,7 @@
 
       break;        
       case 2:
+       
         object = env.svg.append("path")
         .datum(data)
         .attr("class", 'line-'+uid)
@@ -1210,9 +1221,10 @@
       break;
     
       case 3:
-        
+        console.log(data);
 
         data.forEach((d, i)=>{
+         
           object = env.svg.append("path")
           .datum(d).join("path")
           .attr("class", 'line-'+uid+'-'+i)
