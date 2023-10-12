@@ -33,8 +33,8 @@ function arrDepth(arr) {
 
     const data = await interpretate(args[0], env);
     if (Array.isArray(data)) {
-      const res = data.map((el, i) => el-list[i]);
-      return res;
+      data.map((el, i) => el + list[i]);
+      return [0,0];
     }
 
     return data;
@@ -229,13 +229,17 @@ function arrDepth(arr) {
     
     
     let range = [[-1.15,1.15],[-1.15,1.15]];
+    let unknownRanges = true;
 
     if (options.PlotRange) {
       const r = await interpretate(options.PlotRange, env);
-      if (Number.isFinite(r[0][0])) range = r;
+      if (Number.isFinite(r[0][0])) {
+        range = r;
+        unknownRanges = false;
+      }
     }
 
-    if (options.FrameTicks && framed && !options.PlotRange) {
+    /*if (options.FrameTicks && framed && !options.PlotRange) {
       //shitty fix for MatrixPlot 
       console.log('shitty fix for MatrixPLot');
       range = [[0,1], [0,1]];
@@ -248,9 +252,10 @@ function arrDepth(arr) {
         console.log(yy);
         range[0][1] = Math.max(...xx);
         range[1][1] = Math.max(...yy);
+        unknownRanges = false;
       }
       console.log(range);
-    }
+    }*/
     
 
     let transitionType = d3.easeCubicInOut;
@@ -527,10 +532,14 @@ function arrDepth(arr) {
       env.local.xAxis = x;
       env.local.yAxis = y;
 
-      if (options.Controls) {
+      if (options.Controls || (typeof options.Controls === 'undefined')) {
         //add pan and zoom
-        if (await interpretate(options.Controls, env))
-          addPanZoom(listenerSVG, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
+        if (typeof options.Controls === 'undefined') {
+          addPanZoom(listenerSVG, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env);
+        } else {
+          if (await interpretate(options.Controls, env))
+            addPanZoom(listenerSVG, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env);
+        }
       }
 
       if (core._NotebookUI && !env.inset) {
@@ -551,7 +560,82 @@ function arrDepth(arr) {
       await interpretate(options.Prolog, env); 
       await interpretate(args[0], env);
       await interpretate(options.Epilog, env);
+
+      if (unknownRanges) {
+        console.warn('d3.js autoscale!');
+        //credits https://gist.github.com/mootari
+        //thank you, nice guy
+        
+        
+
+        const xsize = ImageSize[0] - (margin.left + margin.right);
+        const ysize = ImageSize[1] - (margin.top + margin.bottom);
+
+        const box = env.svg.node().getBBox();
+        const scale = Math.min(xsize / box.width, ysize / box.height);
+        
+        // Reset transform.
+        let transform = d3.zoomTransform(listenerSVG);
+        
+
+        
+        // Center [0, 0].
+        transform = transform.translate(xsize / 2, ysize / 2);
+        // Apply scale.
+        transform = transform.scale(scale);
+        // Center elements.
+        transform = transform.translate(-box.x - box.width / 2, -box.y - box.height / 2);
+       
+        
+        reScale(transform, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
+
+        if (env._zoom) {
+          env._zoom.transform(listenerSVG, transform);
+        }        
+
+        /*setTimeout(() => {
+          dx =  - (dims.x)*k;
+          dy =  - (dims.y)*k;
+
+          reScale(, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
+  
+          k = Math.min(ImageSize[0] / (dims.x + dims.width + dx), ImageSize[1] / (dims.y + dims.height + dy));
+
+          setTimeout(() => {
+
+            reScale({x: dx, y: dy, k: k}, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
+            dx =  - (dims.x)*k;
+            dy =  - (dims.y)*k;
+
+            setTimeout(() => {
+              reScale({x: dx, y: dy, k: k}, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
+            }, 500);
+
+          }, 500);
+        }, 500);*/
+
+        
+
+
+
+
+        //imagesize
+      }
   };
+
+  const reScale = (transform, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y) => {
+      view.attr("transform", transform);
+      if (gX)
+        gX.call(xAxis.scale(transform.rescaleX(x)));
+      if (gY)
+        gY.call(yAxis.scale(transform.rescaleY(y)));
+
+      if (gTX)
+        gTX.call(txAxis.scale(transform.rescaleX(x)));
+      if (gRY)
+        gRY.call(ryAxis.scale(transform.rescaleY(y)));          
+ 
+};
 
   const icoExport = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" class="w1 h1 mr1"><path d="M2 3C2 1.89543 2.89543 1 4 1H10L14 5V8H12V6H9V3H4V13H6V15H4C2.89543 15 2 14.1046 2 13V3Z"></path><path d="M7.3598 12.7682L8.64017 11.2318L11 13.1983L13.3598 11.2318L14.6402 12.7682L11 15.8017L7.3598 12.7682Z"></path><path d="M10 15L10 9L12 9L12 15L10 15Z"></path></svg>`;
 
@@ -621,15 +705,19 @@ function arrDepth(arr) {
     }
   }
 
-  const addPanZoom = (listener, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y) => {
-      const zoom = d3.zoom()
-        .filter(filter)
-        .on("zoom", zoomed);
+  const addPanZoom = (listener, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env) => {
 
+      d3.zoomTransform;
+      const zoom = d3.zoom().filter(filter).on("zoom", zoomed);
+   
       listener.call(zoom);
+      
+      env._zoom = zoom;
 
+      
 
       function zoomed({ transform }) {
+        
         view.attr("transform", transform);
         if (gX)
           gX.call(xAxis.scale(transform.rescaleX(x)));
@@ -1154,6 +1242,15 @@ function arrDepth(arr) {
   
   g2d.Polygon.virtual = true; //for local memeory and dynamic binding
 
+  g2d.IdentityFunction = async (args, env) => {
+    return (await interpretate(args[0], env));
+  };
+
+  g2d.Tooltip = g2d.IdentityFunction;
+
+  g2d.StatusArea = g2d.IdentityFunction;
+
+  g2d["Charting`DelayedMouseEffect"] = g2d.IdentityFunction;
 
   g2d.Line = async (args, env) => {
     console.log('drawing a line');
@@ -1761,7 +1858,7 @@ function arrDepth(arr) {
 
     env.local.rect = env.svg.append('rect')
     .attr('x', from[0])
-    .attr('y', from[1])
+    .attr('y', from[1] - size[1])
     .attr('width', size[0])
     .attr('height', size[1])
     .attr("vector-effect", "non-scaling-stroke")
@@ -1799,7 +1896,7 @@ function arrDepth(arr) {
     env.local.rect.transition().ease(env.transition.type)
     .duration(env.transition.duration)
     .attr('x', from[0])
-    .attr('y', from[1]) 
+    .attr('y', from[1] - size[1]) 
     .attr('width', size[0])
     .attr('height', size[1]);
   };
