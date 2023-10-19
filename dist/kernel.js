@@ -16,7 +16,7 @@ function arrDepth(arr) {
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "Tiny", "VertexColors", "Antialiasing","Small", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "CurrentValue", "Tiny", "VertexColors", "Antialiasing","Small", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -1457,6 +1457,62 @@ function arrDepth(arr) {
   };
 
   g2d.Line.virtual = true;
+
+  g2d.Circle = async (args, env) => {
+    let data = await interpretate(args[0], env);
+    let radius = 1; 
+
+    if (args.length > 1) {
+      radius = await interpretate(args[1], env);
+      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+    }
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    const object = env.svg
+    .append("circle")
+    .attr("vector-effect", "non-scaling-stroke")
+      .attr("cx", x(data[0]) )
+      .attr("cy", y(data[1]) )
+      .attr("r", x(radius) - x(0))
+      .style("stroke", env.color)
+      .style("fill", 'none')
+      .style("opacity", env.opacity);
+
+    return object;
+  };
+
+  g2d.Circle.destroy = () => {};
+
+  g2d.Disk = async (args, env) => {
+    let data = await interpretate(args[0], env);
+    let radius = 1; 
+
+    if (args.length > 1) {
+      radius = await interpretate(args[1], env);
+      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+    }
+
+    //console.warn(args);
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    const object = env.svg
+    .append("circle")
+    .attr("vector-effect", "non-scaling-stroke")
+      .attr("cx", x(data[0]) )
+      .attr("cy", y(data[1]) )
+      .attr("r", x(radius) - x(0))
+      .style("stroke", 'none')
+      .style("fill", env.color)
+      .style("opacity", env.opacity);
+
+    return object;
+  };
+
+  g2d.Disk.destroy = () => {};
 
   g2d.Point = async (args, env) => {
     let data = await interpretate(args[0], env);
