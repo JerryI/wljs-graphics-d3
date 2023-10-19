@@ -30,7 +30,7 @@
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "Tiny", "Antialiasing","Small", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "Tiny", "VertexColors", "Antialiasing","Small", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -1052,7 +1052,13 @@
 
   g2d.GraphicsComplex = async (args, env) => {
     const vertices = await interpretate(args[0], env);
-    return await interpretate(args[1], {...env, vertices: vertices});
+    const opts = await core._getRules(args, env);
+    const copy = {...env, vertices: vertices};
+    if (opts.VertexColors) {
+      copy.vertexColors = opts.VertexColors;
+    }
+
+    return await interpretate(args[1], copy);
   }
 
   g2d.GraphicsComplex.destroy = async (args, env) => {
@@ -1187,15 +1193,33 @@
 
       const array = [];
 
+      let color = env.color;
+
       points.forEach((path) => {
+        if (env.vertexColors) {
+          //stupid flat shading
+          color = [0,0,0];
+          path.map((vert) => {
+            color[0] = color[0] + env.vertexColors[vert-1][0];
+            color[1] = color[1] + env.vertexColors[vert-1][1];
+            color[2] = color[2] + env.vertexColors[vert-1][2];
+          });
+
+          color[0] = 255.0 * color[0] / path.length;
+          color[1] = 255.0 * color[1] / path.length;
+          color[2] = 255.0 * color[2] / path.length;
+
+          color = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+        }
+
         array.push(env.svg.append("path")
           .datum(path.map((vert) => env.vertices[vert-1]))
-          .attr("fill", env.color)
+          .attr("fill", color)
           .attr('fill-opacity', env.opacity)
           .attr('stroke-opacity', env.strokeOpacity || env.opacity)
           .attr("vector-effect", "non-scaling-stroke")
           .attr("stroke-width", env.strokeWidth)
-          .attr("stroke", env.stroke || env.color)
+          .attr("stroke", env.stroke || color)
           .attr("d", env.local.line));
 
       });
@@ -1779,6 +1803,8 @@
     object.call(d3.zoom()
         .on("zoom", zoom));
   }; 
+
+
   
   g2d.Rotate = async (args, env) => {
     const degrees = await interpretate(args[1], env);
