@@ -237,8 +237,13 @@ function arrDepth(arr) {
     if (options.PlotRange) {
       const r = await interpretate(options.PlotRange, env);
       if (Number.isFinite(r[0][0])) {
-        range = r;
-        unknownRanges = false;
+        if (Number.isFinite(r[1][0])) {
+          range = r;
+          unknownRanges = false;
+        } else {
+          range[0] = r[0];
+          range[1] = r[0];
+        }
       }
     }
 
