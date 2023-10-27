@@ -23,6 +23,11 @@ function arrDepth(arr) {
   
   });
 
+
+
+  g2d.NamespaceBox = async (args, env) => await interpretate(args[1], env);
+  g2d.DynamicModuleBox = async (args, env) => await interpretate(args[1], env);
+  g2d.TagBox = async (args, env) => await interpretate(args[0], env);  
   g2d.DynamicModule = async (args, env) => await interpretate(args[1], env);
   g2d["Charting`DelayedClickEffect"] = async (args, env) => await interpretate(args[0], env);
 
@@ -2295,3 +2300,8 @@ g2d.Image.destroy = (args, env) => interpretate(args[0], env);
 core.NumericArray = (args, env) => interpretate(args[0], env);
 core.NumericArray.update = core.NumericArray;
 core.NumericArray.destroy = core.NumericArray;
+
+g2d.GraphicsGroupBox = g2d.GraphicsGroup;
+g2d.GraphicsComplexBox = g2d.GraphicsComplex;
+g2d.DiskBox = g2d.Disk;
+g2d.LineBox = g2d.Line;
