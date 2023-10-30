@@ -41,6 +41,10 @@
   g2d.HoldForm.update = async (args, env) => await interpretate(args[0], env)
   g2d.HoldForm.destroy = async (args, env) => await interpretate(args[0], env)
 
+  g2d.Scale = async (args, env) => await interpretate(args[0], env)
+  g2d.Scale.update = async (args, env) => await interpretate(args[0], env)
+  g2d.Scale.destroy = async (args, env) => await interpretate(args[0], env)  
+
   g2d.NamespaceBox = async (args, env) => await interpretate(args[1], env)
   g2d.DynamicModuleBox = async (args, env) => await interpretate(args[1], env)
   g2d.TagBox = async (args, env) => await interpretate(args[0], env)  
@@ -832,7 +836,7 @@
     else 
       lab = await interpretate(args[0], env);
 
-    const color = lab2rgb(lab.map(e => e*255.0));
+    const color = lab2rgb(lab.map(e => Math.floor(e*255.0))).map(el => Math.floor(el));
     console.log('LAB color');
     console.log(color);
     
@@ -1215,9 +1219,18 @@
           //stupid flat shading
           color = [0,0,0];
           path.map((vert) => {
-            color[0] = color[0] + env.vertexColors[vert-1][0];
-            color[1] = color[1] + env.vertexColors[vert-1][1];
-            color[2] = color[2] + env.vertexColors[vert-1][2];
+            if(typeof env.vertexColors[vert-1] === 'string') {
+              //console.log(env.vertexColors[vert-1]);
+              const u = d3.color(env.vertexColors[vert-1]);
+              //console.log(u);
+              color[0] = color[0] + u.r/255.0;
+              color[1] = color[1] + u.g/255.0;
+              color[2] = color[2] + u.b/255.0;
+            } else {
+              color[0] = color[0] + env.vertexColors[vert-1][0];
+              color[1] = color[1] + env.vertexColors[vert-1][1];
+              color[2] = color[2] + env.vertexColors[vert-1][2];
+            }
           });
 
           color[0] = 255.0 * color[0] / path.length;
