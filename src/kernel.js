@@ -30,14 +30,16 @@
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "CurrentValue", "Tiny", "VertexColors", "Antialiasing","Small", "Plot", "HoldForm", "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "CurrentValue", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   g2d[name].destroy = () => name;
   g2d[name].update = () => name;
   
   });
 
-
+  g2d.HoldForm = async (args, env) => await interpretate(args[0], env)
+  g2d.HoldForm.update = async (args, env) => await interpretate(args[0], env)
+  g2d.HoldForm.destroy = async (args, env) => await interpretate(args[0], env)
 
   g2d.NamespaceBox = async (args, env) => await interpretate(args[1], env)
   g2d.DynamicModuleBox = async (args, env) => await interpretate(args[1], env)
