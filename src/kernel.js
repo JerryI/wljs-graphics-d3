@@ -222,6 +222,26 @@
     if (framed) {
       padding.left = 20;
     }
+
+    if (options.ImagePadding) {
+      console.log('padding: ');
+      console.log(options.ImagePadding);
+      options.ImagePadding = await interpretate(options.ImagePadding, env);
+
+      if (options.ImagePadding === 'None') {
+        margin.top = 0;
+        margin.bottom = 0;
+        margin.left = 0;
+        margin.right = 0;
+      } else if (!Number.isNaN(options.ImagePadding)) {
+        margin.top = options.ImagePadding;
+        margin.bottom = options.ImagePadding;
+        margin.left = options.ImagePadding;
+        margin.right = options.ImagePadding;
+      } else {
+        console.error('given ImagePadding is not supported!');
+      }
+    }
     
     let width = ImageSize[0] - margin.left - margin.right;
     let height = ImageSize[1] - margin.top - margin.bottom;
@@ -1952,6 +1972,11 @@
 
     return env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   }
+
+  g2d.Translate.destroy = async (args, env) => {
+    const pos = await interpretate(args[1], env);
+    const obj = await interpretate(args[0], env);
+  }  
 
   g2d.Translate.virtual = true  
 
