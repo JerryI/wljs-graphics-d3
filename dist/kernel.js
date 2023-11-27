@@ -224,7 +224,7 @@ function arrDepth(arr) {
         margin.bottom = options.ImagePadding;
         margin.left = options.ImagePadding;
         margin.right = options.ImagePadding;
-      } else {
+      } else if (options.ImagePadding === "All") ; else {
         console.error('given ImagePadding is not supported!');
       }
     }
