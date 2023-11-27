@@ -233,7 +233,7 @@
         margin.bottom = 0;
         margin.left = 0;
         margin.right = 0;
-      } else if (!Number.isNaN(options.ImagePadding)) {
+      } else if (!Number.isInteger(options.ImagePadding)) {
         margin.top = options.ImagePadding;
         margin.bottom = options.ImagePadding;
         margin.left = options.ImagePadding;
