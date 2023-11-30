@@ -1205,7 +1205,7 @@
   g2d.Hue = (args, env) => {
     if (args.length == 3) {
       const color = args.map(el => 100*interpretate(el, env));
-      env.color = "hls("+(3.59*color[0])+","+color[1]+","+color[2]+")";
+      env.color = "hsl("+(3.59*color[0])+","+Math.round(color[1])+"%,"+Math.round(color[2])+"%)";
     } else {
       console.error('g2d: Hue must have three arguments!');
     }
