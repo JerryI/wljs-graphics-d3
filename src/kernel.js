@@ -1563,20 +1563,53 @@
     const x = env.xAxis;
     const y = env.yAxis;
 
+    env.local.coords = [x(data[0]), y(data[1])];
+    env.local.r = x(radius) - x(0);
+
     const object = env.svg
     .append("circle")
     .attr("vector-effect", "non-scaling-stroke")
-      .attr("cx", x(data[0]) )
+      .attr("cx",  x(data[0]))
       .attr("cy", y(data[1]) )
-      .attr("r", x(radius) - x(0))
+      .attr("r", env.local.r)
       .style("stroke", 'none')
       .style("fill", env.color)
       .style("opacity", env.opacity);
 
+    env.local.object = object;
+
     return object;
   }
 
+  g2d.Disk.update = async (args, env) => {
+    let data = await interpretate(args[0], env);
+    let radius = 1; 
+
+    if (args.length > 1) {
+      radius = await interpretate(args[1], env);
+      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+    }
+
+    const x = env.xAxis;
+    const y = env.yAxis;     
+
+    env.local.coords = [x(data[0]), y(data[1])];
+    env.local.r = x(radius) - x(0);
+
+    //console.warn(args);
+
+ 
+    
+    env.local.object.transition().ease(env.transition.type)
+    .duration(env.transition.duration)
+    .attr("cx",  env.local.coords[0])
+    .attr("cy", env.local.coords[1])
+    .attr("r", env.local.r);
+  }
+
   g2d.Disk.destroy = () => {}
+
+  g2d.Disk.virtual = true
 
   g2d.Point = async (args, env) => {
     let data = await interpretate(args[0], env);
