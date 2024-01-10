@@ -30,7 +30,7 @@
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "CurrentValue", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "CurrentValue", "FontColor", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -917,6 +917,11 @@
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
 
+    let globalOffset = {x: 0, y: 0};
+    if (env.offset) {
+      globalOffset = env.offset;
+    }
+
     const object = env.svg.append('text')
       .attr("font-family", env.fontfamily)
       .attr("font-size", env.fontsize)
@@ -926,14 +931,14 @@
       const offset = await interpretate(args[2], env);
 
       object
-      .attr("x", env.xAxis(coords[0] + offset[0]))
-      .attr("y", env.yAxis(coords[1] + offset[1]));
+      .attr("x", env.xAxis(coords[0] + offset[0]) + globalOffset.x)
+      .attr("y", env.yAxis(coords[1] + offset[1]) + globalOffset.y);
 
     } else {
 
       object
-      .attr("x", env.xAxis(coords[0]))
-      .attr("y", env.yAxis(coords[1]));
+      .attr("x", env.xAxis(coords[0]) + globalOffset.x)
+      .attr("y", env.yAxis(coords[1]) + globalOffset.y);
 
     }
 
@@ -1062,6 +1067,10 @@
     if (options.FontSize) {
       env.fontsize = options.FontSize;
     }  
+
+    if (options.FontColor) {
+      env.color = options.FontColor;
+    }
   
     if (options.FontFamily) {
       env.fontfamily = options.FontFamily
@@ -1549,7 +1558,45 @@
 
   g2d.Circle.destroy = () => {}
 
+  g2d._arc = async (args, env) => {
+    let data = await interpretate(args[0], env);
+    let radius = await interpretate(args[1], env);
+      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+    
+    let angles = await interpretate(args[2], env);
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    env.local.coords = [x(data[0]), y(data[1])];
+    env.local.r = x(radius) - x(0);
+
+    const arc = d3.arc() 
+      .outerRadius(0) 
+      .innerRadius(env.local.r) 
+      .startAngle(angles[0]).endAngle(angles[1]); 
+    
+    env.local.arc = arc;
+
+    console.log({x: x(data[0]), xorg: data[0], r: env.local.r, rorg: radius});
+
+    const object = env.svg.append("path") 
+      .attr("vector-effect", "non-scaling-stroke")
+      .attr("transform", `translate(${x(data[0])},${y(data[1])})`)
+      .style("stroke", 'none')
+      .style("fill", env.color)
+      .style("opacity", env.opacity) 
+      .attr("d", arc);  
+      
+    return object;
+  }
+
+
   g2d.Disk = async (args, env) => {
+    if (args.length > 2) {
+      return await g2d._arc(args, env);
+    }
+
     let data = await interpretate(args[0], env);
     let radius = 1; 
 
