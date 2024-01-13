@@ -206,7 +206,7 @@
 
     //-----------------
     
-    let margin = {top: 10, right: 10, bottom: 10, left: 30};
+    let margin = {top: 20, right: 10, bottom: 10, left: 30};
     let padding = {top: 0, right: 0, bottom: 0, left: 0}
 
     if (axis[2]) {
@@ -220,7 +220,10 @@
     }
 
     if (framed) {
-      padding.left = 20;
+      padding.left = 40;
+      margin.right = 40;
+      margin.top = 30;
+      margin.bottom = 30;
     }
 
     if (options.ImagePadding) {
