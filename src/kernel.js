@@ -1,4 +1,4 @@
-
+  import * as dat from 'dat.gui';
 
   function arrDepth(arr) {
     if (arr.length === 0)                   return 0;
@@ -598,17 +598,21 @@
         }
       }
 
-      if (core._NotebookUI && !env.inset) {
-        const controls = document.createElement('div');
-        controls.classList.add('d3-controls');
+      if (!env.inset) {
 
-        controls.innerHTML = icoExport;
+        //Setting GUI
+        const gui = new dat.GUI({ autoPlace: false, name: '...' , closed:true});
 
-        controls.addEventListener('click', ()=>{
+        const guiContainer = document.createElement('div');
+        guiContainer.classList.add('graphics2d-controller');
+        guiContainer.appendChild(gui.domElement);  
+      
+        const button = { Save:function(){ 
           saveFile(serialize(container.firstChild), "plot.svg");
-        });
+        }};
+        gui.add(button, 'Save');        
 
-        env.element.appendChild(controls);
+        env.element.appendChild(guiContainer);
       }
 
 

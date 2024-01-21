@@ -10,3 +10,13 @@
 .frontend-view:hover .d3-controls {
     opacity: 0.6;
 }
+
+.graphics2d-controller {
+    position:absolute;
+    right:0;
+    opacity:0;
+}
+
+.graphics2d-controller:hover {
+    opacity:1;
+}
