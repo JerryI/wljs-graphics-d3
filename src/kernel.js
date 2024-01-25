@@ -896,6 +896,10 @@
 
     const path = await interpretate(args[0], env);
 
+    env.local.line = d3.line()
+      .x(function(d) { return env.xAxis(d[0]) })
+      .y(function(d) { return env.yAxis(d[1]) });
+
     const object = env.svg.append("path")
     .datum(path)
     .attr("vector-effect", "non-scaling-stroke")
@@ -903,14 +907,37 @@
     .attr('opacity', env.opacity)
     .attr("stroke", env.color)
     .attr("stroke-width", env.strokeWidth)
-    .attr("d", d3.line()
-      .x(function(d) { return x(d[0]) })
-      .y(function(d) { return y(d[1]) })
+    .attr("d", env.local.line
     ).attr("marker-end", "url(#"+uid+")"); 
+
+    env.local.arrow = object;
     
     return object;
 
   }
+
+  g2d.Arrow.update = async (args, env) => {
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    const path = await interpretate(args[0], env);
+    console.log(env.local);
+
+    const object = env.local.arrow.datum(path)
+     .transition()
+     .ease(env.transition.type)
+     .duration(env.transition.duration).attrTween('d', function (d) {
+      var previous = d3.select(this).attr('d');
+      var current = env.local.line(d);
+      return interpolatePath(previous, current);
+    }); ;
+     
+
+    
+    return object;
+  }
+
+  g2d.Arrow.virtual = true
 
   g2d.Arrowheads = async () => {
     console.warn('not implemented!');
@@ -923,6 +950,9 @@
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
+
+
+    env.local.text = text;
 
     let globalOffset = {x: 0, y: 0};
     if (env.offset) {
@@ -1039,7 +1069,10 @@
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
 
-    const trans = env.local.object
+    let trans;
+
+    if (env.local.text != text) {
+      trans = env.local.object
       .transition()
       .ease(env.transition.type)
       .duration(env.transition.duration)
@@ -1047,6 +1080,17 @@
       .attr("x", env.xAxis(coords[0]))
       .attr("y", env.yAxis(coords[1]))
       .attr("fill", env.color);
+    } else {
+      trans = env.local.object
+      .transition()
+      .ease(env.transition.type)
+      .duration(env.transition.duration)
+      .attr("x", env.xAxis(coords[0]))
+      .attr("y", env.yAxis(coords[1]))
+      .attr("fill", env.color);
+    }
+
+
 
     return trans;
   }   
