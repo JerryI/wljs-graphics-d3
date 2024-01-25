@@ -1,12 +1,12 @@
 .d3-controls {
     position: absolute;
+    top: 0;
     right: -1rem;
     padding: 0;
-    opacity: 0.7;
-    opacity: 0;
     cursor: pointer;
+    opacity: 0;
 }
 
-.frontend-view:hover .d3-controls {
-    opacity: 0.6;
+.frontend-object:hover .d3-controls {
+    opacity: 1;
 }

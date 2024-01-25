@@ -58,7 +58,7 @@ function arrDepth(arr) {
   g2d.Offset.update = g2d.Offset;
 
   g2d.Graphics = async (args, env) => {
-    if (!d3) d3 = await import('./index-bce11d8a.js');
+    if (!d3) d3 = await import('./index-7f369fc9.js');
     if (!interpolatePath) interpolatePath = (await import('./d3-interpolate-path-3a6490dc.js')).interpolatePath;
 
     g2d.interpolatePath = interpolatePath;
@@ -192,8 +192,8 @@ function arrDepth(arr) {
 
     //-----------------
     
-    let margin = {top: 20, right: 10, bottom: 10, left: 30};
-    let padding = {top: 0, right: 0, bottom: 0, left: 0};
+    let margin = {top: 20, right: 30, bottom: 10, left: 40};
+    let padding = {top: 0, right: 0, bottom: 15, left: 0};
 
     if (axis[2]) {
       margin.top = margin.bottom;
@@ -203,13 +203,17 @@ function arrDepth(arr) {
     if (options.AxesLabel) {
       margin.top = margin.bottom;
       padding.bottom = 10;
+      margin.top = 30;
+      margin.right = 50;
+      padding.right = 50;
     }
 
     if (framed) {
-      padding.left = 40;
+      padding.left = 30;
       margin.right = 40;
       margin.top = 30;
-      margin.bottom = 30;
+      padding.bottom = 10;
+      margin.bottom = 28;
     }
 
     if (options.ImagePadding) {
@@ -463,11 +467,11 @@ function arrDepth(arr) {
         let value = await interpretate(options.AxesLabel[0], temp);
         if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
-          .attr("x", width + temp.offset.x)
+          .attr("x", width + temp.offset.x + 10)
           .attr("y", margin.bottom + temp.offset.y)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
-          .attr("text-anchor", "end")
+          .attr("text-anchor", "start")
           , value, axesstyle); 
         }
 
