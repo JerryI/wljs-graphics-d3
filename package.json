@@ -11,7 +11,7 @@
   "wljs-meta": {
     "js": "dist/kernel.js",
     "styles": "src/styles.css",
-    "autocomplete": "src/autocomplete.js"
+    "kernel": "src/Kernel.wl"
   },
   "repository": {
     "type": "git",

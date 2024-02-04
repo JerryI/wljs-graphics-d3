@@ -1790,13 +1790,13 @@
   g2d.Point.virtual = true  
 
   g2d.EventListener = async (args, env) => {
-    const options = await core._getRules(args, env);
+    const rules = await interpretate(args[1], env);
 
     let object = await interpretate(args[0], env);
     if (Array.isArray(object)) object = object[0];
 
-    Object.keys(options).forEach((rule)=>{
-      g2d.EventListener[rule](options[rule], object, env);
+    rules.forEach((rule)=>{
+      g2d.EventListener[rule.lhs](rule.rhs, object, env);
     });
 
     return null;
@@ -1809,7 +1809,7 @@
   g2d.EventListener.onload = (uid, object, env) => {
 
     console.log('onload event generator');
-    server.emitt(uid, `True`);
+    server.kernel.emitt(uid, `True`, 'onload');
   };  
 
   g2d.MiddlewareListener = async (args, env) => {
@@ -1833,7 +1833,7 @@
   g2d.MiddlewareListener.end = (uid, params, env) => {
     const threshold = params.Threshold || 1.0;
     
-    server.emitt(uid, `True`);
+    server.kernel.emitt(uid, `True`, 'end');
     console.log("pre Fire");
 
     return (object) => {
@@ -1843,7 +1843,7 @@
       return object.then((r) => r.tween(uid, function (d) {
         return function (t) {
           if (t >= threshold && !state) {
-            server.emitt(uid, `True`);
+            server.kernel.emitt(uid, `True`, 'end');
             state = true;
           }
         }
@@ -1870,7 +1870,7 @@
     }
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'drag')
     });
   
     function dragged(event, d) {
@@ -1902,7 +1902,7 @@
     }
 
     const updatePos = throttle((x,y,t) => {
-      server.emitt(uid, `{"${t}", {${x}, ${y}}}`.replace('e', '*^').replace('e', '*^'))
+      server.kernel.emitt(uid, `{"${t}", {${x}, ${y}}}`.replace('e', '*^').replace('e', '*^'), 'dragall')
     });
   
     function dragged(event, d) {
@@ -1930,7 +1930,7 @@
     const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'click')
     });
   
     function clicked(event, d) {
@@ -1949,7 +1949,7 @@
     const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'));
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'mousemove');
     });
   
     function moved(arr) {
@@ -1967,7 +1967,7 @@
     const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'))
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'mouseover')
     });
   
     function moved(arr) {
@@ -1983,7 +1983,7 @@
     console.log(env.local);
 
     const updatePos = throttle(k => {
-      server.emitt(uid, `${k}`);
+      server.kernel.emitt(uid, `${k}`, 'zoom');
     });
 
     function zoom(e) {
