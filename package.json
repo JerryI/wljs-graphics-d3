@@ -11,7 +11,8 @@
   "wljs-meta": {
     "js": "dist/kernel.js",
     "styles": "src/styles.css",
-    "kernel": "src/Kernel.wl"
+    "kernel": "src/Kernel.wl",
+    "category": "Plotting & Graphics"
   },
   "repository": {
     "type": "git",
