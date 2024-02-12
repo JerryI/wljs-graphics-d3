@@ -3179,7 +3179,7 @@ function arrDepth(arr) {
 };
 
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
-  g2d.Graphics.destroy = (args, env) => { interpretate(args[0], {...env, context: g2d}); };
+  g2d.Graphics.destroy = (args, env) => { console.error('Nothing to destroy...'); };
 
   g2d.Inset = async (args, env) => {
     const co = await interpretate(args[1], env);
@@ -3912,7 +3912,9 @@ function arrDepth(arr) {
     return object;
   };
 
-  g2d.Line.destroy = (args, env) => {interpretate(args[0], env);};
+  g2d.Line.destroy = (args, env) => {
+    console.warn('Line was destroyed');
+  };
 
 
 
