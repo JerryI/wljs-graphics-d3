@@ -206,7 +206,7 @@
 
     //-----------------
     
-    let margin = {top: 20, right: 10, bottom: 10, left: 30};
+    let margin = {top: 20, right: 10, bottom: 10, left: 40};
     let padding = {top: 0, right: 0, bottom: 0, left: 0}
 
     if (axis[2]) {
@@ -720,9 +720,9 @@
     return env.local.group;
   }
 
-  //g2d.Inset.destroy = async (args, env) => {
-    //console.warn('Destory method is not supported for Inset');
-  //}
+  g2d.Inset.destroy = async (args, env) => {
+    console.warn('Destory method is not defined for Inset');
+  }
 
   g2d.Inset.virtual = true
 
@@ -825,10 +825,9 @@
     return obj;
   }  
 
-  //g2d.SVGAttribute.destroy = async (args, env) => {
-  //  const attrs = await core._getRules(args, env);
-  //  await interpretate(args[0], env);
-  //}
+  g2d.SVGAttribute.destroy = async (args, env) => {
+    console.log('SVGAttribute: nothing to destroy');
+  }
 
   g2d.SVGAttribute.virtual = true;
 
@@ -1034,6 +1033,10 @@
   }  
 
   g2d.Text.virtual = true;
+
+  g2d.Text.destroy = () => {
+    console.log('Nothing to destory');
+  }
 
   g2d.Text.update = async (args, env) => {
     const text = await interpretate(args[0], env);
@@ -1335,13 +1338,10 @@
     return object;  
   }
   
-  //g2d.Polygon.destroy = async (args, env) => {
-    /*env.local.area.datum([])
-          .transition().ease(env.transition.type)
-          .duration(env.transition.duration); */
-  
-    //interpretate(args[0], env);
-  //}
+  g2d.Polygon.destroy = (args, env) => {
+    console.log('area destroyed');
+    delete env.local.area;
+  }
   
   g2d.Polygon.virtual = true; //for local memeory and dynamic binding
 
@@ -1540,6 +1540,11 @@
 
   g2d.Line.virtual = true
 
+  g2d.Line.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  }
+
   g2d.Circle = async (args, env) => {
     let data = await interpretate(args[0], env);
     let radius = 1; 
@@ -1667,6 +1672,11 @@
 
   g2d.Disk.virtual = true
 
+  g2d.Disk.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  }
+
   g2d.Point = async (args, env) => {
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
@@ -1790,6 +1800,11 @@
   //g2d.Point.destroy = (args, env) => {interpretate(args[0], env)}
 
   g2d.Point.virtual = true  
+
+  g2d.Point.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  }
 
   g2d.EventListener = async (args, env) => {
     const rules = await interpretate(args[1], env);
@@ -2038,6 +2053,11 @@
 
   g2d.Rotate.virtual = true
 
+  g2d.Rotate.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  }
+
   g2d.Translate = async (args, env) => {
     const pos = await interpretate(args[1], env);
     const group = env.svg.append("g");
@@ -2068,6 +2088,11 @@
   //}  
 
   g2d.Translate.virtual = true  
+
+  g2d.Translate.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  }
 
   g2d.TransitionType = () => 'TransitionType'
 
@@ -2144,6 +2169,11 @@
   }
 
   g2d.Rectangle.virtual = true
+
+  g2d.Rectangle.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  }
 
   //plugs
   g2d.Void = (args, env) => {};

@@ -2513,18 +2513,18 @@ function arrDepth(arr) {
  //polyfill for symbols
  ["FaceForm", "CurrentValue", "FontColor", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
-  g2d[name].destroy = () => name;
+  //g2d[name].destroy = () => name;
   g2d[name].update = () => name;
   
   });
 
   g2d.HoldForm = async (args, env) => await interpretate(args[0], env);
   g2d.HoldForm.update = async (args, env) => await interpretate(args[0], env);
-  g2d.HoldForm.destroy = async (args, env) => await interpretate(args[0], env);
+  //g2d.HoldForm.destroy = async (args, env) => await interpretate(args[0], env)
 
   g2d.Scale = async (args, env) => await interpretate(args[0], env);
   g2d.Scale.update = async (args, env) => await interpretate(args[0], env);
-  g2d.Scale.destroy = async (args, env) => await interpretate(args[0], env);  
+  //g2d.Scale.destroy = async (args, env) => await interpretate(args[0], env)  
 
   g2d.NamespaceBox = async (args, env) => await interpretate(args[1], env);
   g2d.DynamicModuleBox = async (args, env) => await interpretate(args[1], env);
@@ -2549,7 +2549,7 @@ function arrDepth(arr) {
     return data;
   };
 
-  g2d.Offset.destroy = g2d.Offset;
+  //g2d.Offset.destroy = g2d.Offset
   g2d.Offset.update = g2d.Offset;
 
   g2d.Graphics = async (args, env) => {
@@ -2687,7 +2687,7 @@ function arrDepth(arr) {
 
     //-----------------
     
-    let margin = {top: 20, right: 10, bottom: 10, left: 30};
+    let margin = {top: 20, right: 10, bottom: 10, left: 40};
     let padding = {top: 0, right: 0, bottom: 0, left: 0};
 
     if (axis[2]) {
@@ -3200,7 +3200,7 @@ function arrDepth(arr) {
   };
 
   g2d.Inset.destroy = async (args, env) => {
-    console.warn('Destory method is not supported for Inset');
+    console.warn('Destory method is not defined for Inset');
   };
 
   g2d.Inset.virtual = true;
@@ -3305,8 +3305,7 @@ function arrDepth(arr) {
   };  
 
   g2d.SVGAttribute.destroy = async (args, env) => {
-    await core._getRules(args, env);
-    await interpretate(args[0], env);
+    console.log('SVGAttribute: nothing to destroy');
   };
 
   g2d.SVGAttribute.virtual = true;
@@ -3353,7 +3352,7 @@ function arrDepth(arr) {
   };
 
   g2d.LABColor.update = () => {};
-  g2d.LABColor.destroy = () => {};
+ // g2d.LABColor.destroy = () => {}
 
   g2d.arrowGenerator = undefined;
 
@@ -3395,9 +3394,9 @@ function arrDepth(arr) {
     console.warn('not implemented!');
   };
 
-  g2d.Arrowheads.destroy = async () => {};
+  //g2d.Arrowheads.destroy = async () => {};
 
-  g2d.Arrow.destroy = async () => {};  
+  //g2d.Arrow.destroy = async () => {}  
 
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
@@ -3514,6 +3513,10 @@ function arrDepth(arr) {
 
   g2d.Text.virtual = true;
 
+  g2d.Text.destroy = () => {
+    console.log('Nothing to destory');
+  };
+
   g2d.Text.update = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
@@ -3530,21 +3533,21 @@ function arrDepth(arr) {
     return trans;
   };   
 
-  g2d.Text.destroy = async (args, env) => {
-    for (const o of args) {
-      await interpretate(o, env);
-    }
-  };
+  //g2d.Text.destroy = async (args, env) => {
+    //for (const o of args) {
+      //await interpretate(o, env);
+    //}
+  //}
 
   //transformation context to convert fractions and etc to SVG form
   g2d.Text.subcontext = {};
   //TODO
 
   g2d.FontSize = () => "FontSize";
-  g2d.FontSize.destroy = g2d.FontSize;
+  //g2d.FontSize.destroy = g2d.FontSize
   g2d.FontSize.update = g2d.FontSize;
   g2d.FontFamily = () => "FontFamily";
-  g2d.FontFamily.destroy = g2d.FontFamily;
+  //g2d.FontFamily.destroy = g2d.FontFamily
   g2d.FontFamily.update = g2d.FontFamily;
   
   g2d.Style = async (args, env) => {
@@ -3565,10 +3568,10 @@ function arrDepth(arr) {
     return await interpretate(args[0], env);
   };
 
-  g2d.Style.destroy = async (args, env) => {
-    await core._getRules(args, env);  
-    return await interpretate(args[0], env);
-  };  
+  //g2d.Style.destroy = async (args, env) => {
+    //const options = await core._getRules(args, env);  
+   // return await interpretate(args[0], env);
+  //}  
   
   g2d.Style.update = async (args, env) => {
     const options = await core._getRules(args, env);
@@ -3595,10 +3598,10 @@ function arrDepth(arr) {
     return await interpretate(args[1], copy);
   };
 
-  g2d.GraphicsComplex.destroy = async (args, env) => {
-    await interpretate(args[0], env);
-    await interpretate(args[1], env);
-  };
+  //g2d.GraphicsComplex.destroy = async (args, env) => {
+    //await interpretate(args[0], env);
+    //await interpretate(args[1], env);
+  //}
 
   g2d.GraphicsGroup = async (args, env) => {
     return await interpretate(args[0], env);
@@ -3608,9 +3611,9 @@ function arrDepth(arr) {
     return await interpretate(args[0], env);
   };  
 
-  g2d.GraphicsGroup.destroy = async (args, env) => {
-    await interpretate(args[0], env);
-  };  
+  //g2d.GraphicsGroup.destroy = async (args, env) => {
+    //await interpretate(args[0], env);
+  //}  
 
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
@@ -3633,7 +3636,7 @@ function arrDepth(arr) {
     }
   };
 
-  g2d.Directive.destroy = g2d.Directive;
+  //g2d.Directive.destroy = g2d.Directive
 
   g2d.EdgeForm = async (args, env) => {
     const copy = {...env};
@@ -3651,9 +3654,9 @@ function arrDepth(arr) {
 
   };
 
-  g2d.EdgeForm.destroy = async (args, env) => {
+  //g2d.EdgeForm.destroy = async (args, env) => {
 
-  };
+  //}
 
   g2d.Opacity = async (args, env) => {
     env.opacity = await interpretate(args[0], env);
@@ -3689,12 +3692,12 @@ function arrDepth(arr) {
     return env.color;
   };
 
-  g2d.RGBColor.destroy = (args, env) => {};
-  g2d.Opacity.destroy = (args, env) => {};
-  g2d.GrayLevel.destroy = (args, env) => {};
+  //g2d.RGBColor.destroy = (args, env) => {}
+  //g2d.Opacity.destroy = (args, env) => {}
+  //g2d.GrayLevel.destroy = (args, env) => {}
   
-  g2d.PointSize.destroy = (args, env) => {};
-  g2d.AbsoluteThickness.destroy = (args, env) => {};
+  //g2d.PointSize.destroy = (args, env) => {}
+  //g2d.AbsoluteThickness.destroy = (args, env) => {}
 
   g2d.Hue = (args, env) => {
     if (args.length == 3) {
@@ -3705,7 +3708,7 @@ function arrDepth(arr) {
     }
   }; 
   
-  g2d.Hue.destroy = (args, env) => {};
+  //g2d.Hue.destroy = (args, env) => {}
 
   g2d.CubicInOut = () => 'CubicInOut';
   g2d.Linear = () => 'Linear';
@@ -3714,7 +3717,7 @@ function arrDepth(arr) {
     console.log('Tooltip is not implemented.');
   };
 
-  g2d.Tooltip.destroy = g2d.Tooltip;
+  //g2d.Tooltip.destroy = g2d.Tooltip
 
   g2d.Polygon = async (args, env) => {
     let points = await interpretate(args[0], env);
@@ -3813,12 +3816,9 @@ function arrDepth(arr) {
     return object;  
   };
   
-  g2d.Polygon.destroy = async (args, env) => {
-    /*env.local.area.datum([])
-          .transition().ease(env.transition.type)
-          .duration(env.transition.duration); */
-  
-    interpretate(args[0], env);
+  g2d.Polygon.destroy = (args, env) => {
+    console.log('area destroyed');
+    delete env.local.area;
   };
   
   g2d.Polygon.virtual = true; //for local memeory and dynamic binding
@@ -3912,9 +3912,9 @@ function arrDepth(arr) {
     return object;
   };
 
-  g2d.Line.destroy = (args, env) => {
-    console.warn('Line was destroyed');
-  };
+  //g2d.Line.destroy = (args, env) => {
+    //console.warn('Line was destroyed');
+  //}
 
 
 
@@ -4017,6 +4017,11 @@ function arrDepth(arr) {
 
   g2d.Line.virtual = true;
 
+  g2d.Line.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  };
+
   g2d.Circle = async (args, env) => {
     let data = await interpretate(args[0], env);
     let radius = 1; 
@@ -4042,7 +4047,7 @@ function arrDepth(arr) {
     return object;
   };
 
-  g2d.Circle.destroy = () => {};
+  //g2d.Circle.destroy = () => {}
 
   g2d._arc = async (args, env) => {
     let data = await interpretate(args[0], env);
@@ -4140,9 +4145,14 @@ function arrDepth(arr) {
     .attr("r", env.local.r);
   };
 
-  g2d.Disk.destroy = () => {};
+  //g2d.Disk.destroy = () => {}
 
   g2d.Disk.virtual = true;
+
+  g2d.Disk.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  };
 
   g2d.Point = async (args, env) => {
     let data = await interpretate(args[0], env);
@@ -4262,9 +4272,14 @@ function arrDepth(arr) {
     return object;
   };
 
-  g2d.Point.destroy = (args, env) => {interpretate(args[0], env);};
+  //g2d.Point.destroy = (args, env) => {interpretate(args[0], env)}
 
   g2d.Point.virtual = true;  
+
+  g2d.Point.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  };
 
   g2d.EventListener = async (args, env) => {
     const rules = await interpretate(args[1], env);
@@ -4303,9 +4318,9 @@ function arrDepth(arr) {
     return interpretate(args[0], env);
   };
 
-  g2d.MiddlewareListener.destroy = (args, env) => {
-    return interpretate(args[0], env);
-  };  
+  //g2d.MiddlewareListener.destroy = (args, env) => {
+    //return interpretate(args[0], env);
+  //}  
 
   g2d.MiddlewareListener.end = (uid, params, env) => {
     const threshold = params.Threshold || 1.0;
@@ -4330,7 +4345,7 @@ function arrDepth(arr) {
 
   g2d.MiddlewareListener.endtransition = g2d.MiddlewareListener.end;
 
-  g2d.EventListener.destroy = (args, env) => {interpretate(args[0], env);};
+  //g2d.EventListener.destroy = (args, env) => {interpretate(args[0], env)}
 
   g2d.EventListener.drag = (uid, object, env) => {
 
@@ -4513,6 +4528,11 @@ function arrDepth(arr) {
 
   g2d.Rotate.virtual = true;
 
+  g2d.Rotate.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  };
+
   g2d.Translate = async (args, env) => {
     const pos = await interpretate(args[1], env);
     const group = env.svg.append("g");
@@ -4537,21 +4557,26 @@ function arrDepth(arr) {
     return env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   };
 
-  g2d.Translate.destroy = async (args, env) => {
-    await interpretate(args[1], env);
-    await interpretate(args[0], env);
-  };  
+  //g2d.Translate.destroy = async (args, env) => {
+   // const pos = await interpretate(args[1], env);
+   // const obj = await interpretate(args[0], env);
+  //}  
 
   g2d.Translate.virtual = true;  
+
+  g2d.Translate.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  };
 
   g2d.TransitionType = () => 'TransitionType';
 
   g2d.Center = () => 'Center';
-  g2d.Center.destroy = g2d.Center;
+  //g2d.Center.destroy = g2d.Center
   g2d.Center.update = g2d.Center;
 
   g2d.Degree = () => Math.PI/180.0;
-  g2d.Degree.destroy = g2d.Degree;
+  //g2d.Degree.destroy = g2d.Degree
   g2d.Degree.update = g2d.Degree;
 
 
@@ -4587,10 +4612,10 @@ function arrDepth(arr) {
      
   };
 
-  g2d.Rectangle.destroy = async (args, env) => {
-    await interpretate(args[0], env);
-    await interpretate(args[1], env);
-  };
+  //g2d.Rectangle.destroy = async (args, env) => {
+    //await interpretate(args[0], env);
+    //await interpretate(args[1], env);
+  //}
   
   g2d.Rectangle.update = async (args, env) => {
     const from = await interpretate(args[0], env);
@@ -4619,6 +4644,11 @@ function arrDepth(arr) {
   };
 
   g2d.Rectangle.virtual = true;
+
+  g2d.Rectangle.destroy = (args, env) => {
+    console.log('nothing to destroy');
+    //delete env.local.area;
+  };
 
   //plugs
   g2d.Void = (args, env) => {};
@@ -4736,7 +4766,7 @@ function arrDepth(arr) {
     }    
   };
 
-  g2d.Raster.destroy = () => {};
+  //g2d.Raster.destroy = () => {}
 
   g2d.Image = async (args, env) => {
     const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true, image:true});
@@ -4917,11 +4947,11 @@ g2d.Image.update = async (args, env) => {
     ctx.putImageData(new ImageData(rgba, width, height),0,0);
 };
 
-g2d.Image.destroy = (args, env) => interpretate(args[0], env);
+//g2d.Image.destroy = (args, env) => interpretate(args[0], env)
 
 core.NumericArray = (args, env) => interpretate(args[0], env);
 core.NumericArray.update = core.NumericArray;
-core.NumericArray.destroy = core.NumericArray;
+//core.NumericArray.destroy = core.NumericArray
 
 g2d.GraphicsGroupBox = g2d.GraphicsGroup;
 g2d.GraphicsComplexBox = g2d.GraphicsComplex;
