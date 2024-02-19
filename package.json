@@ -10,6 +10,7 @@
   "defaultPackage": true,
   "wljs-meta": {
     "js": "dist/kernel.js",
+    "minjs": "dist/kernel.min.js",
     "styles": "src/styles.css",
     "kernel": "src/Kernel.wl",
     "category": "Plotting & Graphics"
@@ -36,5 +37,8 @@
     "rollup-plugin-combine": "^2.1.1",
     "serve-static": "^1.14.1",
     "systemjs": "^6.14.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4"
   }
 }
