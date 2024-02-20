@@ -8,6 +8,8 @@ SVGAttribute::usage = "SVGAttribute[GraphicsObject_, \"Attrname\" -> \"Value\"] 
 
 EventListener::usage = "Internal wrapper for Graphics object to catch events"
 
+AnimationFrameListener::usage = "AnimationFrameListener[symbol // Offload, \"Event\" -> _String] binds to a symbol instance and requests an animation frame once symbol was changed"
+
 Begin["`Private`"]
 
 listener[p_, list_] := With[{uid = CreateUUID[]}, With[{

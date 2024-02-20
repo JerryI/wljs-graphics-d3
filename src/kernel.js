@@ -1108,6 +1108,27 @@
     return await interpretate(args[0], env);
   }  
 
+  g2d.AnimationFrameListener = async (args, env) => {
+    const dummy = await interpretate(args, env);
+    const options = await core._getRules(args, env);
+    env.local.event = options.Event;
+    env.local.fire = () => {
+      server.kernel.emitt(env.local.event, True, 'Frame');
+    }
+
+    window.requestAnimationFrame(env.local.fire);
+  }
+
+  g2d.AnimationFrameListener.update = async (args, env) => {
+    window.requestAnimationFrame(env.local.fire);
+  }
+
+  g2d.AnimationFrameListener.destroy = async (args, env) => {
+    console.warn('AnimationFrameListener does not exist anymore');
+  }
+
+  g2d.AnimationFrameListener.virtual = true
+
   g2d.GraphicsComplex = async (args, env) => {
     const vertices = await interpretate(args[0], env);
     const opts = await core._getRules(args, env);

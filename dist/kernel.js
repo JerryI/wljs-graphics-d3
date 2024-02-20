@@ -1926,7 +1926,7 @@ GUI.CLASS_CLOSE_BOTTOM = 'close-bottom';
 GUI.CLASS_DRAG = 'drag';
 GUI.DEFAULT_WIDTH = 245;
 GUI.TEXT_CLOSED = 'Close Controls';
-GUI.TEXT_OPEN = '...';
+GUI.TEXT_OPEN = 'Open Controls';
 GUI._keydownHandler = function (e) {
   if (document.activeElement.type !== 'text' && (e.which === HIDE_KEY_CODE || e.keyCode === HIDE_KEY_CODE)) {
     GUI.toggleHide();
@@ -2553,7 +2553,7 @@ function arrDepth(arr) {
   g2d.Offset.update = g2d.Offset;
 
   g2d.Graphics = async (args, env) => {
-    if (!d3) d3 = await import('./index-bce11d8a.js');
+    if (!d3) d3 = await import('./index-7f369fc9.js');
     if (!interpolatePath) interpolatePath = (await import('./d3-interpolate-path-3a6490dc.js')).interpolatePath;
 
     g2d.interpolatePath = interpolatePath;
@@ -3586,6 +3586,27 @@ function arrDepth(arr) {
   
     return await interpretate(args[0], env);
   };  
+
+  g2d.AnimationFrameListener = async (args, env) => {
+    await interpretate(args, env);
+    const options = await core._getRules(args, env);
+    env.local.event = options.Event;
+    env.local.fire = () => {
+      server.kernel.emitt(env.local.event, True, 'Frame');
+    };
+
+    window.requestAnimationFrame(env.local.fire);
+  };
+
+  g2d.AnimationFrameListener.update = async (args, env) => {
+    window.requestAnimationFrame(env.local.fire);
+  };
+
+  g2d.AnimationFrameListener.destroy = async (args, env) => {
+    console.warn('AnimationFrameListener does not exist anymore');
+  };
+
+  g2d.AnimationFrameListener.virtual = true;
 
   g2d.GraphicsComplex = async (args, env) => {
     const vertices = await interpretate(args[0], env);
