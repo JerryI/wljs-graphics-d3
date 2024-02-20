@@ -3588,11 +3588,11 @@ function arrDepth(arr) {
   };  
 
   g2d.AnimationFrameListener = async (args, env) => {
-    await interpretate(args, env);
-    const options = await core._getRules(args, env);
-    env.local.event = options.Event;
+    await interpretate(args[0], env);
+    const options = await core._getRules(args, {...env, hold:true});
+    env.local.event = await interpretate(options.Event, env);
     env.local.fire = () => {
-      server.kernel.emitt(env.local.event, True, 'Frame');
+      server.kernel.emitt(env.local.event, 'True', 'Frame');
     };
 
     window.requestAnimationFrame(env.local.fire);

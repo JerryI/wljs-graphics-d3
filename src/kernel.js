@@ -1109,11 +1109,11 @@
   }  
 
   g2d.AnimationFrameListener = async (args, env) => {
-    const dummy = await interpretate(args, env);
-    const options = await core._getRules(args, env);
-    env.local.event = options.Event;
+    const dummy = await interpretate(args[0], env);
+    const options = await core._getRules(args, {...env, hold:true});
+    env.local.event = await interpretate(options.Event, env);
     env.local.fire = () => {
-      server.kernel.emitt(env.local.event, True, 'Frame');
+      server.kernel.emitt(env.local.event, 'True', 'Frame');
     }
 
     window.requestAnimationFrame(env.local.fire);
