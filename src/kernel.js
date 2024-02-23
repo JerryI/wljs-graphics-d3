@@ -205,25 +205,29 @@
     }
 
     //-----------------
-    
-    let margin = {top: 20, right: 10, bottom: 10, left: 40};
-    let padding = {top: 0, right: 0, bottom: 0, left: 0}
+    let margin = {top: 20, right: 30, bottom: 10, left: 40};
+    let padding = {top: 0, right: 0, bottom: 15, left: 0}
 
     if (axis[2]) {
       margin.top = margin.bottom;
       margin.left = margin.right;
     }
-
     if (options.AxesLabel) {
       margin.top = margin.bottom;
       padding.bottom = 10;
+      margin.top = 30;
+      margin.right = 50;
+      padding.right = 50;
     }
 
     if (framed) {
       padding.left = 40;
+      padding.left = 30;
       margin.right = 40;
       margin.top = 30;
       margin.bottom = 30;
+      padding.bottom = 10;
+      margin.bottom = 28;
     }
 
     if (options.ImagePadding) {
@@ -477,11 +481,11 @@
         let value = await interpretate(options.AxesLabel[0], temp);
         if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
-          .attr("x", width + temp.offset.x)
+          .attr("x", width + temp.offset.x + 10)
           .attr("y", margin.bottom + temp.offset.y)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
-          .attr("text-anchor", "end")
+          .attr("text-anchor", "start")
           , value, axesstyle); 
         }
 
@@ -875,41 +879,70 @@
   g2d.LABColor.update = () => {}
  // g2d.LABColor.destroy = () => {}
 
-  g2d.arrowGenerator = undefined
+ g2d.arrowGenerator = undefined
 
-  let arrow1;
+ let arrow1;
 
-  g2d.Arrow = async (args, env) => {
-    if (!arrow1) arrow1 = (await import('d3-arrow')).arrow1;
+ g2d.Arrow = async (args, env) => {
+   if (!arrow1) arrow1 = (await import('d3-arrow')).arrow1;
 
-    const x = env.xAxis;
-    const y = env.yAxis;
+   const x = env.xAxis;
+   const y = env.yAxis;
 
-    const uid = uuidv4();
-    const arrow = arrow1()
-    .id(uid)
-    .attr("fill", env.color)
-    .attr("stroke", "none");
+   const uid = uuidv4();
+   const arrow = arrow1()
+   .id(uid)
+   .attr("fill", env.color)
+   .attr("stroke", "none");
 
-    env.svg.call(arrow);
+   env.svg.call(arrow);
 
-    const path = await interpretate(args[0], env);
+   const path = await interpretate(args[0], env);
 
-    const object = env.svg.append("path")
-    .datum(path)
-    .attr("vector-effect", "non-scaling-stroke")
-    .attr("fill", "none")
-    .attr('opacity', env.opacity)
-    .attr("stroke", env.color)
-    .attr("stroke-width", env.strokeWidth)
-    .attr("d", d3.line()
-      .x(function(d) { return x(d[0]) })
-      .y(function(d) { return y(d[1]) })
-    ).attr("marker-end", "url(#"+uid+")"); 
+   env.local.line = d3.line()
+     .x(function(d) { return env.xAxis(d[0]) })
+     .y(function(d) { return env.yAxis(d[1]) });
+
+   const object = env.svg.append("path")
+   .datum(path)
+   .attr("vector-effect", "non-scaling-stroke")
+   .attr("fill", "none")
+   .attr('opacity', env.opacity)
+   .attr("stroke", env.color)
+   .attr("stroke-width", env.strokeWidth)
+   .attr("d", env.local.line
+   ).attr("marker-end", "url(#"+uid+")"); 
+
+   env.local.arrow = object;
+   
+   return object;
+
+ }
+
+ g2d.Arrow.update = async (args, env) => {
+   const x = env.xAxis;
+   const y = env.yAxis;
+
+   const path = await interpretate(args[0], env);
+   console.log(env.local);
+
+   const object = env.local.arrow.datum(path)
+    .transition()
+    .ease(env.transition.type)
+    .duration(env.transition.duration).attrTween('d', function (d) {
+     var previous = d3.select(this).attr('d');
+     var current = env.local.line(d);
+     return interpolatePath(previous, current);
+   }); ;
     
-    return object;
 
-  }
+   
+   return object;
+ }
+
+ g2d.Arrow.virtual = true
+
+ g2d.Arrow.destroy = async () => {}  
 
   g2d.Arrowheads = async () => {
     console.warn('not implemented!');
@@ -922,6 +955,9 @@
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
+
+
+    env.local.text = text;
 
     let globalOffset = {x: 0, y: 0};
     if (env.offset) {
@@ -1034,15 +1070,14 @@
 
   g2d.Text.virtual = true;
 
-  g2d.Text.destroy = () => {
-    console.log('Nothing to destory');
-  }
-
   g2d.Text.update = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
 
-    const trans = env.local.object
+    let trans;
+
+    if (env.local.text != text) {
+      trans = env.local.object
       .transition()
       .ease(env.transition.type)
       .duration(env.transition.duration)
@@ -1050,9 +1085,26 @@
       .attr("x", env.xAxis(coords[0]))
       .attr("y", env.yAxis(coords[1]))
       .attr("fill", env.color);
+    } else {
+      trans = env.local.object
+      .transition()
+      .ease(env.transition.type)
+      .duration(env.transition.duration)
+      .attr("x", env.xAxis(coords[0]))
+      .attr("y", env.yAxis(coords[1]))
+      .attr("fill", env.color);
+    }
+
+
 
     return trans;
   }   
+
+
+  g2d.Text.destroy = () => {
+    console.log('Nothing to destory');
+  }
+
 
   //g2d.Text.destroy = async (args, env) => {
     //for (const o of args) {
