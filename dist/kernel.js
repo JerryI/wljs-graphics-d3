@@ -2686,7 +2686,7 @@ function arrDepth(arr) {
     }
 
     //-----------------
-    let margin = {top: 20, right: 30, bottom: 10, left: 40};
+    let margin = {top: 0, right: 0, bottom: 10, left: 40};
     let padding = {top: 0, right: 0, bottom: 15, left: 0};
 
     if (axis[2]) {
@@ -2694,7 +2694,6 @@ function arrDepth(arr) {
       margin.left = margin.right;
     }
     if (options.AxesLabel) {
-      margin.top = margin.bottom;
       padding.bottom = 10;
       margin.top = 30;
       margin.right = 50;
