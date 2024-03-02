@@ -3402,7 +3402,7 @@ function arrDepth(arr) {
    env.yAxis;
 
    const path = await interpretate(args[0], env);
-   console.log(env.local);
+   //console.log(env.local);
 
    const object = env.local.arrow.datum(path)
     .transition()
