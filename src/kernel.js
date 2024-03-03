@@ -72,8 +72,9 @@
   g2d.Offset.update = g2d.Offset
 
   g2d.Graphics = async (args, env) => {
-    if (!d3) d3 = await import('d3');
-    if (!interpolatePath) interpolatePath = (await import('d3-interpolate-path')).interpolatePath;
+    await interpretate.shared.d3.load();
+    if (!d3) d3 = interpretate.shared.d3.d3;
+    if (!interpolatePath) interpolatePath = interpretate.shared.d3['d3-interpolate-path'].interpolatePath;
 
     g2d.interpolatePath = interpolatePath;
     g2d.d3 = d3;
@@ -883,7 +884,8 @@
  let arrow1;
 
  g2d.Arrow = async (args, env) => {
-   if (!arrow1) arrow1 = (await import('d3-arrow')).arrow1;
+   await interpretate.shared.d3.load();
+   if (!arrow1) arrow1 = (await interpretate.shared.d3['d3-arrow']).arrow1;
 
    const x = env.xAxis;
    const y = env.yAxis;

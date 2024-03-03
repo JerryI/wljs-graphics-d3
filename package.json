@@ -13,7 +13,8 @@
     "minjs": "dist/kernel.min.js",
     "styles": "src/styles.css",
     "kernel": "src/Kernel.wl",
-    "category": "Plotting & Graphics"
+    "category": "Plotting & Graphics",
+    "priority": 10
   },
   "repository": {
     "type": "git",

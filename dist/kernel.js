@@ -2553,8 +2553,9 @@ function arrDepth(arr) {
   g2d.Offset.update = g2d.Offset;
 
   g2d.Graphics = async (args, env) => {
-    if (!d3) d3 = await import('./index-7f369fc9.js');
-    if (!interpolatePath) interpolatePath = (await import('./d3-interpolate-path-3a6490dc.js')).interpolatePath;
+    await interpretate.shared.d3.load();
+    if (!d3) d3 = interpretate.shared.d3.d3;
+    if (!interpolatePath) interpolatePath = interpretate.shared.d3['d3-interpolate-path'].interpolatePath;
 
     g2d.interpolatePath = interpolatePath;
     g2d.d3 = d3;
@@ -3362,7 +3363,8 @@ function arrDepth(arr) {
  let arrow1;
 
  g2d.Arrow = async (args, env) => {
-   if (!arrow1) arrow1 = (await import('./index-d39348ea.js')).arrow1;
+   await interpretate.shared.d3.load();
+   if (!arrow1) arrow1 = (await interpretate.shared.d3['d3-arrow']).arrow1;
 
    env.xAxis;
    env.yAxis;
