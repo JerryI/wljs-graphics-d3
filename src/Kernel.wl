@@ -1,8 +1,8 @@
 BeginPackage["JerryI`Notebook`Graphics2D`", {"JerryI`Misc`Events`"}]
 
 Controls::usage = "Controls -> True, False is an option for Graphics to use zoom and panning"
-TransitionType::usage = "TransitionType -> \"Linear\", \"CubicInOut\" is an option for Graphics to use smoothening filter for the transitions"
-TransitionDuration::usage = "TransitionDuration -> 300 is an option for Graphics to set the duration of the transitions"
+TransitionType::usage = "TransitionType[type_] or TransitionType -> \"Linear\", \"CubicInOut\" is an option for Graphics to use smoothening filter for the transitions"
+TransitionDuration::usage = "TransitionDuration[amount_] or TransitionDuration -> 300 is an option for Graphics to set the duration of the transitions"
 
 SVGAttribute::usage = "SVGAttribute[GraphicsObject_, \"Attrname\" -> \"Value\"] where AttrName is an d3-svg attribute of the object. Supports dynamic updates"
 
