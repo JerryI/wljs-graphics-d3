@@ -1812,13 +1812,45 @@
 
     //a hack to make non-scalable 
     //https://muffinman.io/blog/svg-non-scaling-circle-and-rectangle/
+    let color;
 
-    data.forEach((d) => {
-      points.push(
-       object.append("path")
-      .attr("d", `M ${x(d[0])} ${y(d[1])} l 0.0001 0`) 
-      .attr("vector-effect", "non-scaling-stroke")
-      );
+    data.forEach((d, vert) => {
+
+      if (env.vertexColors) {
+        //stupid flat shading
+        color = [0,0,0];
+        if(typeof env.vertexColors[vert] === 'string') {
+          //console.log(env.vertexColors[vert-1]);
+          const u = d3.color(env.vertexColors[vert]);
+          //console.log(u);
+          color[0] = color[0] + u.r/255.0;
+          color[1] = color[1] + u.g/255.0;
+          color[2] = color[2] + u.b/255.0;
+        } else {
+          color[0] = color[0] + env.vertexColors[vert][0];
+          color[1] = color[1] + env.vertexColors[vert][1];
+          color[2] = color[2] + env.vertexColors[vert][2];
+        }
+
+        color[0] = 255.0 * color[0] ;
+        color[1] = 255.0 * color[1] ;
+        color[2] = 255.0 * color[2] ;
+
+        color = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+        points.push(
+          object.append("path")
+         .attr('stroke', color)
+         .attr("d", `M ${x(d[0])} ${y(d[1])} l 0.0001 0`) 
+         .attr("vector-effect", "non-scaling-stroke")
+         );
+
+      } else {
+        points.push(
+         object.append("path")
+        .attr("d", `M ${x(d[0])} ${y(d[1])} l 0.0001 0`) 
+        .attr("vector-effect", "non-scaling-stroke")
+        );
+      }
     });
 
     env.local.points = points;
