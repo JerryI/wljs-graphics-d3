@@ -2719,11 +2719,12 @@ function arrDepth(arr) {
     if (framed) {
       padding.left = 40;
       padding.left = 30;
+      margin.left = 30;
       margin.right = 40;
       margin.top = 30;
-      margin.bottom = 30;
+
       padding.bottom = 10;
-      margin.bottom = 28;
+      margin.bottom = 35;
     }
 
     if (options.ImagePadding) {
@@ -2814,7 +2815,7 @@ function arrDepth(arr) {
     }*/
     
 
-    let transitionType = d3.easeCubicInOut;
+    let transitionType = d3.easeLinear;
 
     if (options.TransitionType) {
       const type = await interpretate(options.TransitionType, {...env, context: g2d});
@@ -2939,7 +2940,7 @@ function arrDepth(arr) {
     env.fontfamily = 'sans-serif';
     env.strokeWidth = 1.5;
     env.pointSize = 0.013;
-    env.transition = {duration: 300, type: transitionType};
+    env.transition = {duration: 50, type: transitionType};
 
     axesstyle = {...env};
     ticksstyle = {...env};
