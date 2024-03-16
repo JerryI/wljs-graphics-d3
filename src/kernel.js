@@ -52,17 +52,17 @@
   g2d["Charting`DelayedClickEffect"] = async (args, env) => await interpretate(args[0], env)
 
   g2d.TransitionDuration = async (args, env) => {
-    env.transition.duration = await interpretate(args[0], env);
+    env.transitionDuration = await interpretate(args[0], env);
   }
 
   g2d.TransitionType = async (args, env) => {
     const type = await interpretate(args[0]);
     switch (type) {
       case 'Linear':
-        env.transition.type = d3.easeLinear
+        env.transitionType = d3.easeLinear
       break;
       default:
-        env.transition.type = d3.easeCubicInOut
+        env.transitionType = d3.easeCubicInOut
     }
   }
 
@@ -459,7 +459,8 @@
     env.fontfamily = 'sans-serif';
     env.strokeWidth = 1.5;
     env.pointSize = 0.013;
-    env.transition = {duration: 50, type: transitionType};
+    env.transitionDuration = 50;
+    env.transitionType = transitionType;
 
     axesstyle = {...env};
     ticksstyle = {...env};
@@ -602,7 +603,7 @@
 
       
       if (options.TransitionDuration) {
-        env.transition.duration = await interpretate(options.TransitionDuration, env);
+        env.transitionDuration = await interpretate(options.TransitionDuration, env);
       }
 
       env.local.xAxis = x;
@@ -835,8 +836,8 @@
     //skipping evaluation of the children object
     let obj = env.local.object
       .transition()
-      .ease(env.transition.type)
-      .duration(env.transition.duration);
+      .ease(env.transitionType)
+      .duration(env.transitionDuration);
     
     Object.keys(attrs).forEach((a)=> {
       obj = obj.attr(a, attrs[a]);
@@ -945,8 +946,8 @@
 
    const object = env.local.arrow.datum(path)
     .transition()
-    .ease(env.transition.type)
-    .duration(env.transition.duration).attrTween('d', function (d) {
+    .ease(env.transitionType)
+    .duration(env.transitionDuration).attrTween('d', function (d) {
      var previous = d3.select(this).attr('d');
      var current = env.local.line(d);
      return interpolatePath(previous, current);
@@ -1096,8 +1097,8 @@
     if (env.local.text != text) {
       trans = env.local.object
       .transition()
-      .ease(env.transition.type)
-      .duration(env.transition.duration)
+      .ease(env.transitionType)
+      .duration(env.transitionDuration)
       .text(text)
       .attr("x", env.xAxis(coords[0]))
       .attr("y", env.yAxis(coords[1]))
@@ -1105,8 +1106,8 @@
     } else {
       trans = env.local.object
       .transition()
-      .ease(env.transition.type)
-      .duration(env.transition.duration)
+      .ease(env.transitionType)
+      .duration(env.transitionDuration)
       .attr("x", env.xAxis(coords[0]))
       .attr("y", env.yAxis(coords[1]))
       .attr("fill", env.color);
@@ -1417,8 +1418,8 @@
   
     const object = env.local.area
           .datum(points)
-          .transition().ease(env.transition.type)
-          .duration(env.transition.duration)
+          .transition().ease(env.transitionType)
+          .duration(env.transitionDuration)
           .attrTween('d', function (d) {
             var previous = d3.select(this).attr('d');
             var current = env.local.line(d);
@@ -1545,8 +1546,8 @@
         obj = env.svg.selectAll('.line-'+env.local.uid)
         .datum([])
         .attr("class",'line-'+env.local.uid)
-        .transition().ease(env.transition.type)
-        .duration(env.transition.duration)
+        .transition().ease(env.transitionType)
+        .duration(env.transitionDuration)
         .attrTween('d', function (d) {
           var previous = d3.select(this).attr('d');
           var current = env.local.line(d);
@@ -1562,8 +1563,8 @@
         obj = env.svg.selectAll('.line-'+env.local.uid)
         .datum(data)
         .attr("class",'line-'+env.local.uid)
-        .transition().ease(env.transition.type)
-        .duration(env.transition.duration)
+        .transition().ease(env.transitionType)
+        .duration(env.transitionDuration)
         .attrTween('d', function (d) {
           var previous = d3.select(this).attr('d');
           var current = env.local.line(d);
@@ -1578,8 +1579,8 @@
           obj = env.svg.selectAll('.line-'+env.local.uid+'-'+i)
           .datum(data[i])
           .attr("class",'line-'+env.local.uid+'-'+i)
-          .transition().ease(env.transition.type)
-          .duration(env.transition.duration)
+          .transition().ease(env.transitionType)
+          .duration(env.transitionDuration)
           .attrTween('d', function (d) {
             var previous = d3.select(this).attr('d');
             var current = env.local.line(d);
@@ -1597,8 +1598,8 @@
             .attr("fill", "none")
             .attr("stroke", env.color)
             .attr("stroke-width", env.strokeWidth)
-            .transition().ease(env.transition.type)
-            .duration(env.transition.duration)            
+            .transition().ease(env.transitionType)
+            .duration(env.transitionDuration)            
             .attr("d", d3.line()
               .x(function(d) { return x(d[0]) })
               .y(function(d) { return y(d[1]) })
@@ -1612,8 +1613,8 @@
             obj = env.svg.selectAll('.line-'+env.local.uid+'-'+i).datum(data[0])
             .join("path")
             .attr("class",'line-'+env.local.uid+'-'+i)
-            .transition().ease(env.transition.type)
-            .duration(env.transition.duration)
+            .transition().ease(env.transitionType)
+            .duration(env.transitionDuration)
             .attr("d", env.local.line);            
           }
         }
@@ -1751,8 +1752,8 @@
 
  
     
-    env.local.object.transition().ease(env.transition.type)
-    .duration(env.transition.duration)
+    env.local.object.transition().ease(env.transitionType)
+    .duration(env.transitionDuration)
     .attr("cx",  env.local.coords[0])
     .attr("cy", env.local.coords[1])
     .attr("r", env.local.r);
@@ -1895,8 +1896,8 @@
 
       env.local.points.push(object);
 
-      object = object.transition().ease(env.transition.type)
-      .duration(env.transition.duration)
+      object = object.transition().ease(env.transitionType)
+      .duration(env.transitionDuration)
       .attr("d", `M ${x(data[i][0])} ${y(data[i][1])} l 0.0001 0`) 
       .style("opacity", env.opacity);
     };
@@ -1904,15 +1905,15 @@
     for (let i=env.local.points.length; i>data.length; i--) {
       object = env.local.points.pop();
 
-      object.transition().ease(env.transition.type)
-      .duration(env.transition.duration)
+      object.transition().ease(env.transitionType)
+      .duration(env.transitionDuration)
       .style("opacity", 0)
       .remove(); 
     };
 
     for (let i=0; i < minLength; i++) {
-      object = env.local.points[i].transition().ease(env.transition.type)
-      .duration(env.transition.duration)
+      object = env.local.points[i].transition().ease(env.transitionType)
+      .duration(env.transitionDuration)
       .attr("d", `M ${x(data[i][0])} ${y(data[i][1])} l 0.0001 0`);
     }
 
@@ -2168,7 +2169,7 @@
 
     var interpol_rotate = d3.interpolateString(env.local.rotation, rotation);
 
-    env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attrTween('transform' , function(d,i,a){ return interpol_rotate } )
+    env.local.group.transition().ease(env.transitionType).duration(env.transitionDuration).attrTween('transform' , function(d,i,a){ return interpol_rotate } )
   
     env.local.rotation = rotation;
   }
@@ -2184,7 +2185,7 @@
     const pos = await interpretate(args[1], env);
     const group = env.svg.append("g");
 
-    if (arrDepth(pos) > 1) throw 'List arguments for Translate is not supported for now!';
+   // if (arrDepth(pos) > 1) throw 'List arguments for Translate is not supported for now!';
     
     env.local.group = group;
 
@@ -2201,7 +2202,7 @@
     const xAxis = env.xAxis;
     const yAxis = env.yAxis;
 
-    return env.local.group.transition().ease(env.transition.type).duration(env.transition.duration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
+    return env.local.group.transition().ease(env.transitionType).duration(env.transitionDuration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   }
 
   //g2d.Translate.destroy = async (args, env) => {
@@ -2282,8 +2283,8 @@
 
 
 
-    env.local.rect.transition().ease(env.transition.type)
-    .duration(env.transition.duration)
+    env.local.rect.transition().ease(env.transitionType)
+    .duration(env.transitionDuration)
     .attr('x', from[0])
     .attr('y', from[1] - size[1]) 
     .attr('width', size[0])
