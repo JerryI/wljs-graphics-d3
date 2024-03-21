@@ -4691,7 +4691,6 @@ function arrDepth(arr) {
     //delete env.local.area;
   };
 
-  g2d.TransitionType = () => 'TransitionType';
 
   g2d.Center = () => 'Center';
   //g2d.Center.destroy = g2d.Center
