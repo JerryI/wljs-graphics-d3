@@ -2231,6 +2231,18 @@
     const from = await interpretate(args[0], env);
     const to = await interpretate(args[1], env);
 
+    if (from[1] > to[1]) {
+      const t = from[1];
+      from[1] = to[1];
+      to[1] = t;
+    }
+
+    if (from[0] > to[0]) {
+      const t = from[0];
+      from[0] = to[0];
+      to[0] = t;
+    }
+
     const x = env.xAxis;
     const y = env.yAxis;
 
@@ -2238,6 +2250,13 @@
     from[1] = y(from[1]);
     to[0] = x(to[0]);
     to[1] = y(to[1]);
+
+    /*if (from[0] > to[0]) {
+      const t = from[0];
+      from[0] = to[0];
+      to[0] = t;
+    }*/
+
 
     
 
@@ -2267,6 +2286,18 @@
   g2d.Rectangle.update = async (args, env) => {
     const from = await interpretate(args[0], env);
     const to = await interpretate(args[1], env);
+    
+    if (from[1] > to[1]) {
+      const t = from[1];
+      from[1] = to[1];
+      to[1] = t;
+    }
+
+    if (from[0] > to[0]) {
+      const t = from[0];
+      from[0] = to[0];
+      to[0] = t;
+    }
 
     const x = env.xAxis;
     const y = env.yAxis;
@@ -2275,6 +2306,18 @@
     from[1] = y(from[1]);
     to[0] = x(to[0]);
     to[1] = y(to[1]);
+
+    /*if (from[0] > to[0]) {
+      const t = from[0];
+      from[0] = to[0];
+      to[0] = t;
+    }
+
+    if (from[1] > to[1]) {
+      const t = from[1];
+      from[1] = to[1];
+      to[1] = t;
+    }*/
 
     
 
