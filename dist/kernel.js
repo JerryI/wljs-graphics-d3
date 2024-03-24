@@ -3821,6 +3821,11 @@ function arrDepth(arr) {
 
       let color = env.color;
 
+      //if this is a single polygon
+      if (!points[0][0]) {
+        points = [points];
+      }
+
       points.forEach((path) => {
         if (env.vertexColors) {
           //stupid flat shading
@@ -3863,11 +3868,35 @@ function arrDepth(arr) {
       return env.local.area;
     }
   
-    points.push(points[0]);
-    
     env.local.line = d3.line()
           .x(function(d) { return env.xAxis(d[0]) })
           .y(function(d) { return env.yAxis(d[1]) });
+
+    if (Array.isArray(points[0][0])) {
+      console.log('most likely there are many polygons');
+      const object = env.svg.append('g')
+      .attr("fill", env.color)
+      .attr('fill-opacity', env.opacity)
+      .attr('stroke-opacity', env.strokeOpacity || env.opacity)
+      .attr("vector-effect", "non-scaling-stroke")
+      .attr("stroke-width", env.strokeWidth)
+      .attr("stroke", env.stroke || env.color);
+
+      points.forEach((e) => {
+        e.push(e[0]);
+        object.append("path")
+          .datum(e)
+          .attr("d", env.local.line);
+      });
+
+      env.local.polygons = object;
+      return object;
+
+    }
+    
+    points.push(points[0]);
+    
+
   
     env.local.area = env.svg.append("path")
       .datum(points)
@@ -3888,6 +3917,10 @@ function arrDepth(arr) {
 
     if (env.vertices) {
       throw 'update method of vertices is not supported'
+    }    
+
+    if (env.local.polygons) {
+      throw 'update method for many polygons in not supported'
     }    
   
     env.xAxis;
@@ -3930,6 +3963,43 @@ function arrDepth(arr) {
     const x = env.xAxis;
     const y = env.yAxis;
 
+    if (env.vertices) {
+      //vertex mode
+      if (!data[0][0]) {
+
+        const object = env.svg.append("path")
+        .datum(data.map((index) => env.vertices[index-1]))
+        .attr("fill", "none")
+        .attr("vector-effect", "non-scaling-stroke")
+        .attr('opacity', env.opacity)
+        .attr("stroke", env.color)
+        .attr("stroke-width", env.strokeWidth)
+        .attr("d", d3.line()
+          .x(function(d) { return x(d[0]) })
+          .y(function(d) { return y(d[1]) })
+          ); 
+
+        return object;
+      } else {
+        const gr = env.svg.append("g");
+        gr.attr("fill", "none")
+        .attr('opacity', env.opacity)
+        .attr("stroke", env.color)
+        .attr("stroke-width", env.strokeWidth);
+
+        data.forEach((dt) => {
+          gr.append("path")
+          .datum(dt.map((index) => env.vertices[index-1]))
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("d", d3.line()
+            .x(function(d) { return x(d[0]) })
+            .y(function(d) { return y(d[1]) })
+            ); 
+        });
+
+        return gr;
+      }
+    }
     
 
     const uid = uuidv4();
@@ -3939,7 +4009,7 @@ function arrDepth(arr) {
 
     let object;
 
-
+    //TODO: Get rid of CLASSES!!!!
     switch(arrDepth(data)) {
       case 0:
         //empty
@@ -4015,6 +4085,10 @@ function arrDepth(arr) {
     const y = env.yAxis;
 
     let obj;
+
+    if (env.vertices) {
+      throw 'Update mode for vertices in Line is not supported for now!';
+    }
 
 
     switch(arrDepth(data)) {
@@ -4250,6 +4324,7 @@ function arrDepth(arr) {
     const y = env.yAxis;
 
     if (env.vertices) {
+      if (data[0][0]) data = data.flat();
       data = data.map((e) => env.vertices[e-1]);
     } else {
       const dp = arrDepth(data);
@@ -4295,7 +4370,7 @@ function arrDepth(arr) {
     data.forEach((d, vert) => {
 
       if (env.vertexColors) {
-        //stupid flat shading
+       
         color = [0,0,0];
         if(typeof env.vertexColors[vert] === 'string') {
           //console.log(env.vertexColors[vert-1]);
