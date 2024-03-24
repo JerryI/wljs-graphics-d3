@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/JerryI/wljs-graphics-d3#readme",
   "dependencies": {
+    "@fantasy-color/lab-to-rgb": "^2.1.0",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",

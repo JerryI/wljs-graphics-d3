@@ -2493,6 +2493,37 @@ function updateDisplays(controllerArray) {
 }
 var GUI$1 = GUI;
 
+var node = {};
+
+Object.defineProperty(node, "__esModule", {
+  value: true
+});
+var default_1 = node.default = void 0;
+const t1 = 6 / 29;
+const t2 = 3 * t1 * t1;
+
+const lrgb2rgb = x => Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055)) || 0;
+
+const lab2xyz = t => t > t1 ? t * t * t : t2 * (t - 4 / 29);
+
+var _default = ({
+  luminance,
+  a,
+  b
+}) => {
+  const baseY = (luminance + 16) / 116;
+  const x = 0.96422 * lab2xyz(baseY + a / 500);
+  const y = Number(lab2xyz(baseY));
+  const z = 0.82521 * lab2xyz(baseY - b / 200);
+  return {
+    red: lrgb2rgb(3.1338561 * x - 1.6168667 * y - 0.4906146 * z),
+    green: lrgb2rgb(-0.9787684 * x + 1.9161415 * y + 0.0334540 * z),
+    blue: lrgb2rgb(0.0719453 * x - 0.2289914 * y + 1.4052427 * z)
+  };
+};
+
+default_1 = node.default = _default;
+
 function arrDepth(arr) {
     if (arr.length === 0)                   return 0;
     if (arr[0].length === undefined)        return 1;
@@ -3331,30 +3362,6 @@ function arrDepth(arr) {
 
   g2d.SVGAttribute.virtual = true;
 
-
-  const lab2rgb = (lab) => {
-    var y = (lab[0] + 16) / 116,
-        x = lab[1] / 500 + y,
-        z = y - lab[2] / 200,
-        r, g, b;
-  
-    x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16/116) / 7.787);
-    y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16/116) / 7.787);
-    z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16/116) / 7.787);
-  
-    r = x *  3.2406 + y * -1.5372 + z * -0.4986;
-    g = x * -0.9689 + y *  1.8758 + z *  0.0415;
-    b = x *  0.0557 + y * -0.2040 + z *  1.0570;
-  
-    r = (r > 0.0031308) ? (1.055 * Math.pow(r, 1/2.4) - 0.055) : 12.92 * r;
-    g = (g > 0.0031308) ? (1.055 * Math.pow(g, 1/2.4) - 0.055) : 12.92 * g;
-    b = (b > 0.0031308) ? (1.055 * Math.pow(b, 1/2.4) - 0.055) : 12.92 * b;
-  
-    return [Math.max(0, Math.min(1, r)) * 255, 
-            Math.max(0, Math.min(1, g)) * 255, 
-            Math.max(0, Math.min(1, b)) * 255]
-  };
-
   g2d.LABColor =  async (args, env) => {
     let lab;
     if (args.length > 1)
@@ -3362,11 +3369,13 @@ function arrDepth(arr) {
     else 
       lab = await interpretate(args[0], env);
 
-    const color = lab2rgb(lab.map(e => Math.floor(e*255.0))).map(el => Math.floor(el));
+    
+    const color = default_1({luminance: 100*lab[0], a: 100*lab[1], b: 100*lab[2]});
+    console.log(lab);
     console.log('LAB color');
     console.log(color);
     
-    env.color = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+    env.color = "rgb("+Math.floor(color.red)+","+Math.floor(color.green)+","+Math.floor(color.blue)+")";
     if (args.length > 3) env.opacity = await interpretate(args[3], env);
     
     return env.color;   
