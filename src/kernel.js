@@ -305,11 +305,15 @@
 
       let boxsize = await interpretate(options.ViewBox, env);
       if (!(boxsize instanceof Array)) boxsize = [0,0,boxsize, boxsize*aspectratio];
-      svg.attr("viewBox", boxsize);     
+      svg.attr("viewBox", boxsize);  
+      env.viewBox = boxsize;   
 
     } else {
       svg.attr("width", width + margin.left + margin.right + padding.left)
          .attr("height", height + margin.top + margin.bottom + padding.bottom);
+
+      env.svgWidth = width + margin.left + margin.right + padding.left;
+      env.svgHeight = height + margin.top + margin.bottom + padding.bottom;
     }
 
     const listenerSVG = svg;
@@ -487,6 +491,8 @@
     env.transitionDuration = 50;
     env.transitionType = transitionType;
 
+    env.plotRange = range;
+
     axesstyle = {...env};
     ticksstyle = {...env};
 
@@ -643,6 +649,21 @@
             addPanZoom(listenerSVG, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env);
         }
       }
+
+      env.panZoomEntites = {
+        canvas: listenerSVG,
+        svg: env.svg,
+        gX: gX,
+        gY: gY,
+        gTX: gTX,
+        gRY: gRY,
+        xAxis: xAxis,
+        yAxis: yAxis,
+        txAxis: txAxis,
+        ryAxis: ryAxis,
+        x: x,
+        y: y
+      };
 
       if (!env.inset) {
 
@@ -1230,6 +1251,61 @@
 
   g2d.Annotation = core.List;
 
+  g2d.ZoomAt = async (args, env) => {
+    let zoom = await interpretate(args[0], env);
+    let translate = [0,0];
+    if (args.length > 1) {
+      translate = await interpretate(args[1], env);
+    }
+
+    translate = [env.xAxis(translate[0]) - env.xAxis(0), env.yAxis(translate[1]) - env.yAxis(0)];
+    console.log(translate);
+
+    const o = env.panZoomEntites;
+
+    console.log(env.svg.attr('transform'));
+    const dims = env.svg.node().getBBox();
+    const transform = d3.zoomIdentity.translate(dims.width/2, dims.height/2).scale(zoom).translate(-dims.width/2 - translate[0], -dims.height/2 - translate[1]);
+    
+
+    o.svg.maybeTransition(env.transitionType, env.transitionDuration).attr("transform", transform);
+    if (o.gX)
+      o.gX.maybeTransition(env.transitionType, env.transitionDuration).call(o.xAxis.scale(transform.rescaleX(o.x)));
+    if (o.gY)
+      o.gY.maybeTransition(env.transitionType, env.transitionDuration).call(o.yAxis.scale(transform.rescaleY(o.y)));
+
+    if (o.gTX)
+      o.gTX.maybeTransition(env.transitionType, env.transitionDuration).call(o.txAxis.scale(transform.rescaleX(o.x)));
+    if (o.gRY)
+      o.gRY.maybeTransition(env.transitionType, env.transitionDuration).call(o.ryAxis.scale(transform.rescaleY(o.y))); 
+
+    //env.svg.maybeTransition(env.transitionType, env.transitionDuration).call(
+      
+
+
+  }
+
+  const rescaleRanges = (ranges, old, o, env) => {
+    throw('not implemented');
+    const target = [ranges[0].map((e) => o.xAxis(e)), ranges[1].map((e) => o.yAxis(e))];
+    const prev   = [old[0].map((e) => o.xAxis(e)), old[1].map((e) => o.yAxis(e))];
+
+    console.log({target, prev});
+
+    const transform = d3.zoomIdentity.translate(width / 2, height / 2).scale(40).translate(-x, -y);
+
+    o.svg.attr("transform", transform)
+    if (o.gX)
+      o.gX.call(o.xAxis.scale(transform.rescaleX(o.x)));
+    if (gY)
+      o.gY.call(o.yAxis.scale(transform.rescaleY(o.y)));
+
+    if (o.gTX)
+      o.gTX.call(o.txAxis.scale(transform.rescaleX(o.x)));
+    if (o.gRY)
+      o.gRY.call(o.ryAxis.scale(transform.rescaleY(o.y))); 
+  }
+
   g2d.Directive = async (args, env) => {
     const opts = await core._getRules(args, env);
     for (const o of Object.keys(opts)) {
@@ -1238,6 +1314,12 @@
 
     //rebuild transition structure
     assignTransition(env);
+
+    if ('PlotRange' in opts) {
+      //recalculate the plot range
+      const ranges = opts.PlotRange;
+      rescaleRanges(ranges, env.plotRange, env.panZoomEntites);
+    }
 
     for (let i=0; i<(args.length - Object.keys(opts).length); ++i) {
       await interpretate(args[i], env);
