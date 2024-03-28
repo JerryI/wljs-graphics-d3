@@ -51,18 +51,25 @@
   g2d.DynamicModule = async (args, env) => await interpretate(args[1], env)
   g2d["Charting`DelayedClickEffect"] = async (args, env) => await interpretate(args[0], env)
 
-  g2d.TransitionDuration = async (args, env) => {
-    env.transitionDuration = await interpretate(args[0], env);
-  }
+  g2d.TransitionDuration = () => "TransitionDuration"
+  g2d.TransitionType = () => "TransitionType"
 
-  g2d.TransitionType = async (args, env) => {
-    const type = await interpretate(args[0]);
-    switch (type) {
-      case 'Linear':
-        env.transitionType = d3.easeLinear
-      break;
-      default:
-        env.transitionType = d3.easeCubicInOut
+  var assignTransition = (env) => {
+    if (env.transitiontype) {
+      switch (env.transitiontype) {
+        case 'Linear':
+          env.transitionType = d3.easeLinear
+        break;
+        case 'CubicInOut':
+          env.transitionType = d3.easeCubicInOut
+        break;
+        default:
+          env.transitionType = undefined;
+      }
+    }
+
+    if (env.transitionduration) {
+      env.transitionDuration = env.transitionduration
     }
   }
 
@@ -93,6 +100,21 @@
 
     g2d.interpolatePath = interpolatePath;
     g2d.d3 = d3;
+
+    d3.selection.prototype.maybeTransition = function(type, duration) {
+      return type ? this.transition().ease(type).duration(duration) : this;
+    };
+
+    d3.selection.prototype.maybeTransitionTween = function(type, duration, d, func) {
+
+
+      return type ? this.transition()
+      .ease(type)
+      .duration(duration).attrTween(d, func) : this.attr(d, func.apply(this.node(), this.data())(1.0));
+    }
+
+
+
 
     /**
      * @type {Object}
@@ -342,8 +364,11 @@
         case 'Linear':
           transitionType = d3.easeLinear
         break;
-        default:
+        case 'CubicInOut':
           transitionType = d3.easeCubicInOut
+        break;
+        default:
+          transitionType = undefined;
       }
     }
 
@@ -834,10 +859,7 @@
   g2d.SVGAttribute.update = async (args, env) => {
     const attrs = await core._getRules(args, env);
     //skipping evaluation of the children object
-    let obj = env.local.object
-      .transition()
-      .ease(env.transitionType)
-      .duration(env.transitionDuration);
+    let obj = env.local.object.maybeTransition(env.transitionType, env.transitionDuration);
     
     Object.keys(attrs).forEach((a)=> {
       obj = obj.attr(a, attrs[a]);
@@ -924,16 +946,11 @@
    const path = await interpretate(args[0], env);
    //console.log(env.local);
 
-   const object = env.local.arrow.datum(path)
-    .transition()
-    .ease(env.transitionType)
-    .duration(env.transitionDuration).attrTween('d', function (d) {
-     var previous = d3.select(this).attr('d');
-     var current = env.local.line(d);
-     return interpolatePath(previous, current);
-   }); ;
-    
-
+   const object = env.local.arrow.datum(path).maybeTransitionTween(env.TransitionType, env.TransitionDuration, 'd', function (d) {
+    var previous = d3.select(this).attr('d');
+    var current = env.local.line(d);
+    return interpolatePath(previous, current);
+  });
    
    return object;
  }
@@ -1076,18 +1093,14 @@
 
     if (env.local.text != text) {
       trans = env.local.object
-      .transition()
-      .ease(env.transitionType)
-      .duration(env.transitionDuration)
+      .maybeTransition(env.transitionType, env.transitionDuration)
       .text(text)
       .attr("x", env.xAxis(coords[0]))
       .attr("y", env.yAxis(coords[1]))
       .attr("fill", env.color);
     } else {
       trans = env.local.object
-      .transition()
-      .ease(env.transitionType)
-      .duration(env.transitionDuration)
+      .maybeTransition(env.transitionType, env.transitionDuration)
       .attr("x", env.xAxis(coords[0]))
       .attr("y", env.yAxis(coords[1]))
       .attr("fill", env.color);
@@ -1222,6 +1235,9 @@
     for (const o of Object.keys(opts)) {
       env[o.toLowerCase()] = opts[o];
     }
+
+    //rebuild transition structure
+    assignTransition(env);
 
     for (let i=0; i<(args.length - Object.keys(opts).length); ++i) {
       await interpretate(args[i], env);
@@ -1431,9 +1447,7 @@
   
     const object = env.local.area
           .datum(points)
-          .transition().ease(env.transitionType)
-          .duration(env.transitionDuration)
-          .attrTween('d', function (d) {
+          .maybeTransitionTween(env.transitionType, env.transitionDuration, 'd', function (d) {
             var previous = d3.select(this).attr('d');
             var current = env.local.line(d);
             return interpolatePath(previous, current);
@@ -1581,6 +1595,7 @@
 
 
 
+
   g2d.Line.update = async (args, env) => {
 
     let data = await interpretate(args[0], env);
@@ -1600,9 +1615,7 @@
         obj = env.svg.selectAll('.line-'+env.local.uid)
         .datum([])
         .attr("class",'line-'+env.local.uid)
-        .transition().ease(env.transitionType)
-        .duration(env.transitionDuration)
-        .attrTween('d', function (d) {
+        .maybeTransitionTween(env.transitionType, env.transitionDuration, 'd', function (d) {
           var previous = d3.select(this).attr('d');
           var current = env.local.line(d);
           return interpolatePath(previous, current);
@@ -1616,14 +1629,13 @@
         //animate the rest
         obj = env.svg.selectAll('.line-'+env.local.uid)
         .datum(data)
-        .attr("class",'line-'+env.local.uid)
-        .transition().ease(env.transitionType)
-        .duration(env.transitionDuration)
-        .attrTween('d', function (d) {
-          var previous = d3.select(this).attr('d');
-          var current = env.local.line(d);
-          return interpolatePath(previous, current);
-        }); 
+        .attr("class",'line-'+env.local.uid).maybeTransition(env.transitionType, env.transitionDuration)
+
+          /*.attrTween('d', function (d) {
+            var previous = d3.select(this).attr('d');
+            var current = env.local.line(d);
+            return interpolatePath(previous, current);
+          }); */
 
       break;
     
@@ -1633,9 +1645,7 @@
           obj = env.svg.selectAll('.line-'+env.local.uid+'-'+i)
           .datum(data[i])
           .attr("class",'line-'+env.local.uid+'-'+i)
-          .transition().ease(env.transitionType)
-          .duration(env.transitionDuration)
-          .attrTween('d', function (d) {
+          .maybeTransitionTween(env.transitionType, env.transitionDuration, 'd', function (d) {
             var previous = d3.select(this).attr('d');
             var current = env.local.line(d);
             return interpolatePath(previous, current);
@@ -1652,8 +1662,7 @@
             .attr("fill", "none")
             .attr("stroke", env.color)
             .attr("stroke-width", env.strokeWidth)
-            .transition().ease(env.transitionType)
-            .duration(env.transitionDuration)            
+            .maybeTransition(env.transitionType, env.transitionDuration)          
             .attr("d", d3.line()
               .x(function(d) { return x(d[0]) })
               .y(function(d) { return y(d[1]) })
@@ -1667,8 +1676,7 @@
             obj = env.svg.selectAll('.line-'+env.local.uid+'-'+i).datum(data[0])
             .join("path")
             .attr("class",'line-'+env.local.uid+'-'+i)
-            .transition().ease(env.transitionType)
-            .duration(env.transitionDuration)
+            .maybeTransition(env.transitionType, env.transitionDuration)
             .attr("d", env.local.line);            
           }
         }
@@ -1806,8 +1814,7 @@
 
  
     
-    env.local.object.transition().ease(env.transitionType)
-    .duration(env.transitionDuration)
+    env.local.object.maybeTransition(env.transitionType, env.transitionDuration)
     .attr("cx",  env.local.coords[0])
     .attr("cy", env.local.coords[1])
     .attr("r", env.local.r);
@@ -1951,8 +1958,7 @@
 
       env.local.points.push(object);
 
-      object = object.transition().ease(env.transitionType)
-      .duration(env.transitionDuration)
+      object = object.maybeTransition(env.transitionType, env.transitionDuration)
       .attr("d", `M ${x(data[i][0])} ${y(data[i][1])} l 0.0001 0`) 
       .style("opacity", env.opacity);
     };
@@ -1960,15 +1966,13 @@
     for (let i=env.local.points.length; i>data.length; i--) {
       object = env.local.points.pop();
 
-      object.transition().ease(env.transitionType)
-      .duration(env.transitionDuration)
+      object.maybeTransition(env.transitionType, env.transitionDuration)
       .style("opacity", 0)
       .remove(); 
     };
 
     for (let i=0; i < minLength; i++) {
-      object = env.local.points[i].transition().ease(env.transitionType)
-      .duration(env.transitionDuration)
+      object = env.local.points[i].maybeTransition(env.transitionType, env.transitionDuration)
       .attr("d", `M ${x(data[i][0])} ${y(data[i][1])} l 0.0001 0`);
     }
 
@@ -2224,7 +2228,7 @@
 
     var interpol_rotate = d3.interpolateString(env.local.rotation, rotation);
 
-    env.local.group.transition().ease(env.transitionType).duration(env.transitionDuration).attrTween('transform' , function(d,i,a){ return interpol_rotate } )
+    env.local.group.maybeTransitionTween(env.transitionType, env.transitionDuration, 'transform' , function(d,i,a){ return interpol_rotate } )
   
     env.local.rotation = rotation;
   }
@@ -2257,7 +2261,7 @@
     const xAxis = env.xAxis;
     const yAxis = env.yAxis;
 
-    return env.local.group.transition().ease(env.transitionType).duration(env.transitionDuration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
+    return env.local.group.maybeTransition(env.transitionType, env.transitionDuration).attr("transform", `translate(${xAxis(pos[0])- xAxis(0)}, ${yAxis(pos[1]) - yAxis(0)})`);
   }
 
   //g2d.Translate.destroy = async (args, env) => {
@@ -2380,8 +2384,7 @@
 
 
 
-    env.local.rect.transition().ease(env.transitionType)
-    .duration(env.transitionDuration)
+    env.local.rect.maybeTransition(env.transitionType, env.transitionDuration)
     .attr('x', from[0])
     .attr('y', from[1] - size[1]) 
     .attr('width', size[0])
