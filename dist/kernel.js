@@ -2567,7 +2567,7 @@ function arrDepth(arr) {
   g2d.TransitionType = () => "TransitionType";
 
   var assignTransition = (env) => {
-    if (env.transitiontype) {
+    if ('transitiontype' in env) {
       switch (env.transitiontype) {
         case 'Linear':
           env.transitionType = d3.easeLinear;
@@ -2576,7 +2576,7 @@ function arrDepth(arr) {
           env.transitionType = d3.easeCubicInOut;
         break;
         default:
-          env.transitionType = undefined;
+          env.transitionType = false;
       }
     }
 
@@ -4908,7 +4908,7 @@ function arrDepth(arr) {
   g2d.Identity              = g2d.Void;
   g2d.Scaled                = g2d.Void;
   g2d.GoldenRatio           = g2d.Void;
-  g2d.None                  = g2d.Void;
+  g2d.None                  = () => false;
 
   g2d.AbsolutePointSize     = g2d.Void;
   g2d.CopiedValueFunction   = g2d.Void;
