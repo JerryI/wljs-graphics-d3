@@ -1711,7 +1711,11 @@
         //animate the rest
         obj = env.svg.selectAll('.line-'+env.local.uid)
         .datum(data)
-        .attr("class",'line-'+env.local.uid).maybeTransition(env.transitionType, env.transitionDuration)
+        .attr("class",'line-'+env.local.uid).maybeTransitionTween(env.transitionType, env.transitionDuration, 'd', function (d) {
+          var previous = d3.select(this).attr('d');
+          var current = env.local.line(d);
+          return interpolatePath(previous, current);
+        }); 
 
           /*.attrTween('d', function (d) {
             var previous = d3.select(this).attr('d');
