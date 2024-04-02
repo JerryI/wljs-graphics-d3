@@ -5273,7 +5273,8 @@ g2d.Image.update = async (args, env) => {
     
 };
 
-//g2d.Image.destroy = (args, env) => interpretate(args[0], env)
+g2d.Image.destroy = (args, env) => {
+};
 
 
 
