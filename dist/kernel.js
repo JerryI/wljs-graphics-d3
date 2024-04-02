@@ -5090,6 +5090,7 @@ function arrDepth(arr) {
   //g2d.Raster.destroy = () => {}
 
   g2d.Image = async (args, env) => {
+    const time = performance.now();
     const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true, image:true});
     const height = data.length;
     const width = data[0].length;
@@ -5189,9 +5190,12 @@ function arrDepth(arr) {
 
     // Repost the data.
     ctx.putImageData(new ImageData(rgba, width, height),0,0);
+    console.warn(`${performance.now() - time} passed`);
 };
 
 g2d.Image.update = async (args, env) => {
+    
+
     const data = await interpretate(args[0], {...env, nfast:true, numeric:true, image:true});
     const height = data.length;
     const width = data[0].length;
@@ -5266,13 +5270,16 @@ g2d.Image.update = async (args, env) => {
 
     // Repost the data.
     ctx.putImageData(new ImageData(rgba, width, height),0,0);
+    
 };
 
 //g2d.Image.destroy = (args, env) => interpretate(args[0], env)
 
-core.NumericArray = (args, env) => interpretate(args[0], env);
-core.NumericArray.update = core.NumericArray;
-//core.NumericArray.destroy = core.NumericArray
+
+
+
+
+
 
 g2d.GraphicsGroupBox = g2d.GraphicsGroup;
 g2d.GraphicsComplexBox = g2d.GraphicsComplex;
