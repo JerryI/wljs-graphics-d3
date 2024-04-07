@@ -5113,6 +5113,10 @@ function arrDepth(arr) {
   g2d.MetaInformation = () => "MetaInformation";
   g2d.ImageResolution = () => "ImageResolution";
 
+  g2d.DateObject = () => {
+    console.warn('Date Object is not supported for now');
+  };
+
   g2d.Image = async (args, env) => {
     const options = await core._getRules(args, {...env, context: g2d});
 
