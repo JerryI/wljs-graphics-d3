@@ -5117,7 +5117,7 @@ function arrDepth(arr) {
 
     console.log(width);
     console.log(height);
-    console.log(data);
+    //console.log(data);
 
 
     let ImageSize = options.ImageSize;
@@ -5260,51 +5260,62 @@ g2d.Image.update = async (args, env) => {
     
 
     const data = await interpretate(args[0], {...env, nfast:true, numeric:true, image:true});
-    const height = data.length;
-    const width = data[0].length;
+    data.length;
+    data[0].length;
     const rgb = data[0][0].length;
 
     const ctx = env.local.ctx;
 
+    const target_width = env.local.target_width;
+    const target_height = env.local.target_height;
+
+    const scalingFactor = env.local.scalingFactor;
+
     // Wrap your array as a Uint8ClampedArray
-    const rgba = new Uint8ClampedArray(width*height*4);
+    const rgba = new Uint8ClampedArray(target_width*target_height*4);
   
     //OH shitty slow Javascript, why...you do not have faster methods
     //TODO: rewrite using webGL!!!
     let index = 0;
+    let ix, jx;
 
     if (!rgb) {
-      for (let i=0; i<height; ++i) {
-        for (let j=0; j<width; ++j) {
+      for (let i=0; i<target_height; ++i) {
+        for (let j=0; j<target_width; ++j) {
           //what am i doing
           //after years of CUDA and FPGA programming I am writting a loop over an image array
           //shit
+          ix = Math.floor(i * scalingFactor);
+          jx = Math.floor(j * scalingFactor); 
 
-          rgba[index+0] = data[i][j]*255;
-          rgba[index+1] = data[i][j]*255;
-          rgba[index+2] = data[i][j]*255;
+
+          rgba[index+0] = data[ix][jx]*255;
+          rgba[index+1] = data[ix][jx]*255;
+          rgba[index+2] = data[ix][jx]*255;
           rgba[index+3] = 255;
 
           index+=4;
         }
       }  
 
-      ctx.putImageData(new ImageData(rgba, width, height),0,0);
+      ctx.putImageData(new ImageData(rgba, target_width, target_height),0,0);
       return;
     }
 
   
     if (rgb === 3) {
-      for (let i=0; i<height; ++i) {
-        for (let j=0; j<width; ++j) {
+      for (let i=0; i<target_height; ++i) {
+        for (let j=0; j<target_width; ++j) {
         
           //what am i doing
           //after years of CUDA and FPGA programming I am writting a loop over an image array
           //shit
+          ix = Math.floor(i * scalingFactor);
+          jx = Math.floor(j * scalingFactor); 
 
-          rgba[index+0] = data[i][j][0];
-          rgba[index+1] = data[i][j][1];
-          rgba[index+2] = data[i][j][2];
+          rgba[index+0] = data[ix][jx][0];
+          rgba[index+1] = data[ix][jx][1];
+          rgba[index+2] = data[ix][jx][2];
           rgba[index+3] = 255;
 
           index+=4;
@@ -5313,17 +5324,19 @@ g2d.Image.update = async (args, env) => {
     }
 
     if (rgb === 4) {
-      for (let i=0; i<height; ++i) {
-        for (let j=0; j<width; ++j) {
-        
+      for (let i=0; i<target_height; ++i) {
+        for (let j=0; j<target_width; ++j) {
+          
+          ix = Math.floor(i * scalingFactor);
+          jx = Math.floor(j * scalingFactor);         
           //what am i doing
           //after years of CUDA and FPGA programming I am writting a loop over an image array
           //shit
 
-          rgba[index+0] = data[i][j][0];
-          rgba[index+1] = data[i][j][1];
-          rgba[index+2] = data[i][j][2];
-          rgba[index+3] = data[i][j][3];
+          rgba[index+0] = data[ix][jx][0];
+          rgba[index+1] = data[ix][jx][1];
+          rgba[index+2] = data[ix][jx][2];
+          rgba[index+3] = data[ix][jx][3];
 
           index+=4;
         }
@@ -5332,7 +5345,7 @@ g2d.Image.update = async (args, env) => {
 
 
     // Repost the data.
-    ctx.putImageData(new ImageData(rgba, width, height),0,0);
+    ctx.putImageData(new ImageData(rgba, target_width, target_height),0,0);
     
 };
 
