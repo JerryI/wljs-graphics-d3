@@ -303,6 +303,17 @@
     let width = ImageSize[0] - margin.left - margin.right;
     let height = ImageSize[1] - margin.top - margin.bottom;
 
+    if (width <0 || height < 0) {
+      //overflow - remove all!
+      margin.top = 0;
+      margin.bottom = 0;
+      margin.left = 0;
+      margin.right = 0;
+      padding = {top: 0, right: 0, bottom: 0, left: 0};
+      width = ImageSize[0];
+      height = ImageSize[1];
+    }
+
     // append the svg object to the body of the page
     let svg;
     
@@ -710,8 +721,27 @@
         const xsize = ImageSize[0] - (margin.left + margin.right);
         const ysize = ImageSize[1] - (margin.top + margin.bottom);
 
-        const box = env.svg.node().getBBox();
+        let box = env.svg.node().getBBox();
+
+        console.log([xsize, ysize]);
+        
+        if (!box.width) {
+          console.warn('Warning! Looks like an element was not drawn properly');
+          box.width = ImageSize[0];
+          box.height = ImageSize[0];
+          box.x = 0;
+          box.y = 0;
+          console.log(box);
+        }
+
+
+
+        console.log(box);
+
+
         const scale = Math.min(xsize / box.width, ysize / box.height);
+
+        console.log(scale);
         
         // Reset transform.
         let transform = d3.zoomTransform(listenerSVG);
@@ -724,6 +754,8 @@
         transform = transform.scale(scale);
         // Center elements.
         transform = transform.translate(-box.x - box.width / 2, -box.y - box.height / 2);
+
+        console.log(transform);
        
         
         reScale(transform, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env);
@@ -732,33 +764,7 @@
           env._zoom.transform(listenerSVG, transform);
         }        
 
-        /*setTimeout(() => {
-          dx =  - (dims.x)*k;
-          dy =  - (dims.y)*k;
-
-          reScale(, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
-  
-          k = Math.min(ImageSize[0] / (dims.x + dims.width + dx), ImageSize[1] / (dims.y + dims.height + dy));
-
-          setTimeout(() => {
-
-            reScale({x: dx, y: dy, k: k}, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
-            dx =  - (dims.x)*k;
-            dy =  - (dims.y)*k;
-
-            setTimeout(() => {
-              reScale({x: dx, y: dy, k: k}, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
-            }, 500);
-
-          }, 500);
-        }, 500);*/
-
         
-
-
-
-
-        //imagesize
       }
   }
 
@@ -846,7 +852,7 @@
 
   const addPanZoom = (listener, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env) => {
 
-      d3.zoomTransform
+      console.log({listener, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env});
       const zoom = d3.zoom().filter(filter).on("zoom", zoomed);
    
       listener.call(zoom);
@@ -2556,7 +2562,7 @@
           .attr('width', rectWidth)
           .attr('height', rectHeight)
           .attr('opacity', env.opacity)
-          .attr('fill', `rgb(${255*data[i][j]}, ${255*data[i][j]}, ${255*data[i][j]})`);
+          .attr('fill', `rgb(${Math.floor(255*data[i][j])}, ${Math.floor(255*data[i][j])}, ${Math.floor(255*data[i][j])})`);
           
         }
       }  
@@ -2573,7 +2579,7 @@
           .attr('width', rectWidth)
           .attr('height', rectHeight)
           .attr('opacity', data[i][j][1])
-          .attr('fill', `rgb(${255*data[i][j][0]}, ${255*data[i][j][0]}, ${255*data[i][j][0]})`);
+          .attr('fill', `rgb(${Math.floor(255*data[i][j][0])}, ${Math.floor(255*data[i][j][0])}, ${Math.floor(255*data[i][j][0])})`);
           
         }
       }  
@@ -2590,7 +2596,7 @@
           .attr('width', rectWidth)
           .attr('height', rectHeight)
           .attr('opacity', env.opacity)
-          .attr('fill', `rgb(${255*data[i][j][0]}, ${255*data[i][j][1]}, ${255*data[i][j][2]})`);
+          .attr('fill', `rgb(${Math.floor(255*data[i][j][0])}, ${Math.floor(255*data[i][j][1])}, ${Math.floor(255*data[i][j][2])})`);
           
         }
       } 
@@ -2607,7 +2613,7 @@
           .attr('width', rectWidth)
           .attr('height', rectHeight)
           .attr('opacity', data[i][j][3])
-          .attr('fill', `rgb(${255*data[i][j][0]}, ${255*data[i][j][1]}, ${255*data[i][j][2]})`);
+          .attr('fill', `rgb(${Math.floor(255*data[i][j][0])}, ${Math.floor(255*data[i][j][1])}, ${Math.floor(255*data[i][j][2])})`);
           
         }
       } 
@@ -2841,7 +2847,7 @@ g2d.Image.update = async (args, env) => {
     if (rgb === 4) {
       for (let i=0; i<target_height; ++i) {
         for (let j=0; j<target_width; ++j) {
-          
+
           ix = Math.floor(i * scalingFactor);
           jx = Math.floor(j * scalingFactor);         
           //what am i doing
