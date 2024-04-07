@@ -2649,7 +2649,19 @@ function arrDepth(arr) {
     /**
      * @type {[Number, Number]}
      */
-    let ImageSize = await interpretate(options.ImageSize, env) || [core.DefaultWidth, 0.618034*core.DefaultWidth];
+    let ImageSize = await interpretate(options.ImageSize, env);
+    
+    if (!ImageSize) {
+      if (env.imageSize) {
+        if (Array.isArray(env.imageSize)) {
+          ImageSize = env.imageSize;
+        } else {
+          ImageSize = [env.imageSize, env.imageSize*0.618034];
+        }
+      } else {
+        ImageSize = [core.DefaultWidth, 0.618034*core.DefaultWidth];
+      }
+    }
 
     const aspectratio = await interpretate(options.AspectRatio, env) || 0.618034;
 
@@ -4984,6 +4996,7 @@ function arrDepth(arr) {
 
   g2d.Raster = async (args, env) => {
     if (env.image) return await interpretate(args[0], env);
+    //TODO THIS SUCKS
 
     const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true});
     console.log(args);
@@ -5088,20 +5101,59 @@ function arrDepth(arr) {
   };
 
   //g2d.Raster.destroy = () => {}
+  g2d.Magnification = () => "Magnification";
+  g2d.ColorSpace = () => "ColorSpace";
+  g2d.Interleaving = () => "Interleaving";
+  g2d.MetaInformation = () => "MetaInformation";
+  g2d.ImageResolution = () => "ImageResolution";
 
   g2d.Image = async (args, env) => {
+    const options = await core._getRules(args, {...env, context: g2d});
+
     const time = performance.now();
     const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true, image:true});
     const height = data.length;
     const width = data[0].length;
+
+    console.log(width);
+    console.log(height);
+    console.log(data);
+
+
+    let ImageSize = options.ImageSize;
+
+    if (options.Magnification) {
+      //options.Magnification = await interpretate(options.Magnification, env);
+      ImageSize = Math.floor(width * options.Magnification);
+    }
+
+    if (!ImageSize) {
+      if (env.imageSize) {
+        ImageSize = env.imageSize;
+      } else {
+        ImageSize = width;
+      }
+    }
+
+    //only width can be controlled!
+    if (Array.isArray(ImageSize)) ImageSize = ImageSize[0];
+
+    const target_width = Math.floor(ImageSize);
+    const target_height = Math.floor((height / width) * (ImageSize));
+
+    const scalingFactor =  width / target_width;
+
+    console.log(scalingFactor);
+
+
     const rgb = data[0][0].length;
     let ctx;
 
 
     if (env.inset) {
       const foreignObject = env.inset.append('foreignObject')
-      .attr('width', width)
-      .attr('height', height);
+      .attr('width', target_width)
+      .attr('height', target_height);
     
       const canvas = foreignObject.append('xhtml:canvas')
       .attr('xmlns', 'http://www.w3.org/1999/xhtml');
@@ -5109,8 +5161,8 @@ function arrDepth(arr) {
       ctx = canvas.node().getContext('2d');
     } else {
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;      
+      canvas.width = target_width;
+      canvas.height = target_height;      
       env.element.appendChild(canvas);
       ctx  = canvas.getContext("2d");
     }
@@ -5122,25 +5174,32 @@ function arrDepth(arr) {
     env.local.length = width*height*4;
     env.local.width = width;
     env.local.height = height;
+    env.local.target_width = target_width;
+    env.local.target_height = target_height;
+    env.local.scalingFactor = scalingFactor;
     env.local.rgb = rgb;
 
     // Wrap your array as a Uint8ClampedArray
-    const rgba = new Uint8ClampedArray(width*height*4);
+    const rgba = new Uint8ClampedArray(target_width*target_height*4);
   
     //OH shitty slow Javascript, why...you do not have faster methods
     //TODO: rewrite using webGL!!!
     let index = 0;
+    let ix;
+    let jx;
 
     if (!rgb) {
-      for (let i=0; i<height; ++i) {
-        for (let j=0; j<width; ++j) {
+      for (let i=0; i<target_height; ++i) {
+        for (let j=0; j<target_width; ++j) {
           //what am i doing
           //after years of CUDA and FPGA programming I am writting a loop over an image array
           //shit
+          ix = Math.floor(i * scalingFactor);
+          jx = Math.floor(j * scalingFactor);
 
-          rgba[index+0] = data[i][j]*255;
-          rgba[index+1] = data[i][j]*255;
-          rgba[index+2] = data[i][j]*255;
+          rgba[index+0] = data[ix][jx]*255;
+          rgba[index+1] = data[ix][jx]*255;
+          rgba[index+2] = data[ix][jx]*255;
           rgba[index+3] = 255;
 
           index+=4;
@@ -5152,16 +5211,18 @@ function arrDepth(arr) {
     }
 
     if (rgb === 3) {
-      for (let i=0; i<height; ++i) {
-        for (let j=0; j<width; ++j) {
+      for (let i=0; i<target_height; ++i) {
+        for (let j=0; j<target_width; ++j) {
         
           //what am i doing
           //after years of CUDA and FPGA programming I am writting a loop over an image array
           //shit
+          ix = Math.floor(i * scalingFactor);
+          jx = Math.floor(j * scalingFactor);          
 
-          rgba[index+0] = data[i][j][0];
-          rgba[index+1] = data[i][j][1];
-          rgba[index+2] = data[i][j][2];
+          rgba[index+0] = data[ix][jx][0];
+          rgba[index+1] = data[ix][jx][1];
+          rgba[index+2] = data[ix][jx][2];
           rgba[index+3] = 255;
 
           index+=4;
@@ -5170,17 +5231,19 @@ function arrDepth(arr) {
     }
 
     if (rgb === 4) {
-      for (let i=0; i<height; ++i) {
-        for (let j=0; j<width; ++j) {
+      for (let i=0; i<target_height; ++i) {
+        for (let j=0; j<target_width; ++j) {
         
           //what am i doing
           //after years of CUDA and FPGA programming I am writting a loop over an image array
           //shit
+          ix = Math.floor(i * scalingFactor);
+          jx = Math.floor(j * scalingFactor);
 
-          rgba[index+0] = data[i][j][0];
-          rgba[index+1] = data[i][j][1];
-          rgba[index+2] = data[i][j][2];
-          rgba[index+3] = data[i][j][3];
+          rgba[index+0] = data[ix][jx][0];
+          rgba[index+1] = data[ix][jx][1];
+          rgba[index+2] = data[ix][jx][2];
+          rgba[index+3] = data[ix][jx][3];
 
           index+=4;
         }
@@ -5189,7 +5252,7 @@ function arrDepth(arr) {
 
 
     // Repost the data.
-    ctx.putImageData(new ImageData(rgba, width, height),0,0);
+    ctx.putImageData(new ImageData(rgba, target_width, target_height),0,0);
     console.warn(`${performance.now() - time} passed`);
 };
 
