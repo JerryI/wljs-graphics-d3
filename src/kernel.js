@@ -51,6 +51,8 @@
   g2d.DynamicModule = async (args, env) => await interpretate(args[1], env)
   g2d["Charting`DelayedClickEffect"] = async (args, env) => await interpretate(args[0], env)
 
+  g2d.ColorProfileData = () => {}
+
   g2d.ParametricPlot = () => {}
 
   g2d.TransitionDuration = () => "TransitionDuration"
