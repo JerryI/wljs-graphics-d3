@@ -2772,7 +2772,7 @@
           rgba[index+0] = data[ix][jx][0];
           rgba[index+1] = data[ix][jx][1];
           rgba[index+2] = data[ix][jx][2];
-          rgba[index+3] = data[ix][jx][3];
+          rgba[index+3] = 255; // ignore alpha
 
           index+=4;
         }
@@ -2865,8 +2865,8 @@ g2d.Image.update = async (args, env) => {
           rgba[index+0] = data[ix][jx][0];
           rgba[index+1] = data[ix][jx][1];
           rgba[index+2] = data[ix][jx][2];
-          rgba[index+3] = data[ix][jx][3];
-
+          rgba[index+3] = 255; // ignore alpha
+          
           index+=4;
         }
       }
