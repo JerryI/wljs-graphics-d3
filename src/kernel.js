@@ -26,6 +26,9 @@
   let g2d = {};
   g2d.name = "WebObjects/Graphics";
 
+  const g2dComplex = {};
+  g2dComplex.name = "GraphicsComplex 2D"
+
 
   interpretate.contextExpand(g2d);
 
@@ -515,6 +518,7 @@
     env.fontfamily = 'sans-serif';
     env.strokeWidth = 1.5;
     env.pointSize = 0.013;
+    env.arrowHead = 1.0;
     env.transitionDuration = 50;
     env.transitionType = transitionType;
 
@@ -945,6 +949,90 @@
 
  let arrow1;
 
+ g2dComplex.Arrow = async (args, env) => {
+  await interpretate.shared.d3.load();
+  if (!arrow1) arrow1 = (await interpretate.shared.d3['d3-arrow']).arrow1;
+
+  let data = await interpretate(args[0], env);
+
+  if (!Array.isArray(data)) {
+    //if not a numerical data, but some other curves
+    let object;
+    const uid = uuidv4();
+    const arrow = arrow1()
+    .id(uid)
+    .attr("fill", env.color)
+    .attr("stroke", "none").scale([env.arrowHead]);
+  
+    env.svg.call(arrow);
+
+    object = data.attr("marker-end", "url(#"+uid+")");
+
+    return object;
+  }
+
+  const x = env.xAxis;
+  const y = env.yAxis;
+
+  //difference case for verices
+  //console.warn(data);
+  if (!data[0][0]) {
+      const uid = uuidv4();
+      const arrow = arrow1()
+      .id(uid)
+      .attr("fill", env.color)
+      .attr("stroke", "none").scale([env.arrowHead]);
+    
+      env.svg.call(arrow);
+
+ 
+
+      const object = env.svg.append("path")
+      .datum(data.map((index) => env.vertices[index-1]))
+      .attr("fill", "none")
+      .attr("vector-effect", "non-scaling-stroke")
+      .attr('opacity', env.opacity)
+      .attr("stroke", env.color)
+      .attr("stroke-width", env.strokeWidth)
+      .attr("d", d3.line()
+        .x(function(d) { return x(d[0]) })
+        .y(function(d) { return y(d[1]) })
+        ).attr("marker-end", "url(#"+uid+")"); 
+
+      return object;
+    } else {
+
+      console.log('Multiple isntances');
+      console.log(data);
+
+      const gr = env.svg.append("g");
+      gr.attr("fill", "none")
+      .attr('opacity', env.opacity)
+      .attr("stroke", env.color)
+      .attr("stroke-width", env.strokeWidth);
+
+      const uid = uuidv4();
+      const arrow = arrow1()
+      .id(uid)
+      .attr("fill", env.color)
+      .attr("stroke", "none").scale([env.arrowHead]);
+      env.svg.call(arrow);  
+
+      data.forEach((dt) => {
+              
+        const object = gr.append("path")
+        .datum(dt.map((index) => env.vertices[index-1]))
+        .attr("vector-effect", "non-scaling-stroke")
+        .attr("d", d3.line()
+          .x(function(d) { return x(d[0]) })
+          .y(function(d) { return y(d[1]) })
+          ).attr("marker-end", "url(#"+uid+")"); ; 
+      });
+
+      return gr;
+    }
+ }
+
  g2d.Arrow = async (args, env) => {
    await interpretate.shared.d3.load();
    if (!arrow1) arrow1 = (await interpretate.shared.d3['d3-arrow']).arrow1;
@@ -956,29 +1044,63 @@
    const arrow = arrow1()
    .id(uid)
    .attr("fill", env.color)
-   .attr("stroke", "none");
+   .attr("stroke", "none").scale([env.arrowHead]);
 
    env.svg.call(arrow);
 
    const path = await interpretate(args[0], env);
 
+   if (!Array.isArray(path)) {
+    //if not a numerical data, but some other curves
+    let object;
+
+    object = path.attr("marker-end", "url(#"+uid+")");
+
+    return object;
+  }
+
    env.local.line = d3.line()
      .x(function(d) { return env.xAxis(d[0]) })
      .y(function(d) { return env.yAxis(d[1]) });
 
-   const object = env.svg.append("path")
-   .datum(path)
-   .attr("vector-effect", "non-scaling-stroke")
-   .attr("fill", "none")
-   .attr('opacity', env.opacity)
-   .attr("stroke", env.color)
-   .attr("stroke-width", env.strokeWidth)
-   .attr("d", env.local.line
-   ).attr("marker-end", "url(#"+uid+")"); 
+  if (!path[0][0][0]) {
 
-   env.local.arrow = object;
+     const object = env.svg.append("path")
+     .datum(path)
+     .attr("vector-effect", "non-scaling-stroke")
+     .attr("fill", "none")
+     .attr('opacity', env.opacity)
+     .attr("stroke", env.color)
+     .attr("stroke-width", env.strokeWidth)
+     .attr("d", env.local.line
+     ).attr("marker-end", "url(#"+uid+")"); 
+
+     env.local.arrow = object;
    
-   return object;
+     return object;
+  } else {
+    const object = [];
+
+    path.forEach((p) => {
+      object.push(env.svg.append("path")
+      .datum(p)
+      .attr("vector-effect", "non-scaling-stroke")
+      .attr("fill", "none")
+      .attr('opacity', env.opacity)
+      .attr("stroke", env.color)
+      .attr("stroke-width", env.strokeWidth)
+      .attr("d", env.local.line
+      ).attr("marker-end", "url(#"+uid+")"))
+    });
+
+
+    env.local.arrows = object;
+
+    return object;
+
+  }
+
+
 
  }
 
@@ -986,7 +1108,10 @@
    const x = env.xAxis;
    const y = env.yAxis;
 
+
    const path = await interpretate(args[0], env);
+   if (path[0][0][0]) throw('Arrows update method does not support multiple traces');
+
    //console.log(env.local);
 
    const object = env.local.arrow.datum(path).maybeTransitionTween(env.TransitionType, env.TransitionDuration, 'd', function (d) {
@@ -1002,8 +1127,13 @@
 
  g2d.Arrow.destroy = async () => {}  
 
-  g2d.Arrowheads = async () => {
-    console.warn('not implemented!');
+  g2d.Arrowheads = async (args, env) => {
+    const head = (await interpretate(args[0], env));
+    if (Array.isArray(head)) {
+      env.arrowHead = 10.0*(head.flat())[0];
+    } else {
+      env.arrowHead = 10.0*head;
+    }
   }
 
   //g2d.Arrowheads.destroy = async () => {};
@@ -1178,21 +1308,26 @@
   g2d.FontFamily.update = g2d.FontFamily
   
   g2d.Style = async (args, env) => {
+    const copy = {...env};
     const options = await core._getRules(args, env);
     
     if (options.FontSize) {
-      env.fontsize = options.FontSize;
+      copy.fontsize = options.FontSize;
     }  
 
     if (options.FontColor) {
-      env.color = options.FontColor;
+      copy.color = options.FontColor;
     }
   
     if (options.FontFamily) {
-      env.fontfamily = options.FontFamily
+      copy.fontfamily = options.FontFamily
     } 
+
+    for(let i=1; i<(args.length - Object.keys(options).length); ++i) {
+      await interpretate(args[i], copy);
+    }
   
-    return await interpretate(args[0], env);
+    return await interpretate(args[0], copy);
   }
 
   //g2d.Style.destroy = async (args, env) => {
@@ -1235,10 +1370,13 @@
 
   g2d.AnimationFrameListener.virtual = true
 
+  
+
   g2d.GraphicsComplex = async (args, env) => {
     const vertices = await interpretate(args[0], env);
     const opts = await core._getRules(args, env);
-    const copy = {...env, vertices: vertices};
+    const copy = {...env, vertices: vertices, context: [g2dComplex, g2d]};
+
     if (opts.VertexColors) {
       copy.vertexColors = opts.VertexColors;
     }
@@ -1246,10 +1384,24 @@
     return await interpretate(args[1], copy);
   }
 
+  g2d.GraphicsComplex.update = () => {
+    throw('Updates of GraphicsComplex are not supported!');
+  }
+
+  g2d.GraphicsComplex.destroy = () => {
+    console.log('Nothing to destroy');
+  }
+
+  g2d.GraphicsComplex.virtual = true; //local memory for updates
+
   //g2d.GraphicsComplex.destroy = async (args, env) => {
     //await interpretate(args[0], env);
     //await interpretate(args[1], env);
   //}
+
+  g2d.Medium = () => 0.8/10.0;
+  g2d.Large = () => 1.1/10.0;
+  g2d.Small = () => 0.25/10.0;
 
   g2d.GraphicsGroup = async (args, env) => {
     return await interpretate(args[0], env);
@@ -1411,11 +1563,15 @@
   
   //g2d.PointSize.destroy = (args, env) => {}
   //g2d.AbsoluteThickness.destroy = (args, env) => {}
+  let hsv2hsl = (h,s,v,l=v-v*s/2, m=Math.min(l,1-l)) => [h,m?(v-l)/m:0,l];
 
-  g2d.Hue = (args, env) => {
+  g2d.Hue = async (args, env) => {
     if (args.length == 3) {
-      const color = args.map(el => 100*interpretate(el, env));
-      env.color = "hsl("+(3.59*color[0])+","+Math.round(color[1])+"%,"+Math.round(color[2])+"%)";
+      let color = await Promise.all(args.map(el => interpretate(el, env)));
+      color = hsv2hsl(...color);
+      color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
+
+      env.color = "hsl("+(3.14*100*color[0]).toFixed(2)+","+color[1]+"%,"+color[2]+"%)";
     } else {
       console.error('g2d: Hue must have three arguments!');
     }
@@ -1432,24 +1588,28 @@
 
   //g2d.Tooltip.destroy = g2d.Tooltip
 
-  g2d.Polygon = async (args, env) => {
+  g2dComplex.List = core.List // for speed up searching
+
+  //not an instance. Just a plain object. Symbols must be bounded to GraphicsComplex
+  g2dComplex.Polygon = async (args, env) => {
     let points = await interpretate(args[0], env);
 
-    if (env.vertices) {
-      env.local.line = d3.line()
+    if (!env.vertices) throw('No vertices provided!');
+
+    if (!env.local.line) env.local.line = d3.line()
       .x(function(d) { return env.xAxis(d[0]) })
       .y(function(d) { return env.yAxis(d[1]) });
 
-      const array = [];
+    const array = [];
 
-      let color = env.color;
+    let color = env.color;
 
-      //if this is a single polygon
-      if (!points[0][0]) {
-        points = [points];
-      }
+    //if this is a single polygon
+    if (!points[0][0]) {
+      points = [points];
+    }
 
-      points.forEach((path) => {
+    points.forEach((path) => {
         if (env.vertexColors) {
           //stupid flat shading
           color = [0,0,0];
@@ -1473,9 +1633,9 @@
           color[2] = 255.0 * color[2] / path.length;
 
           color = "rgb("+color[0]+","+color[1]+","+color[2]+")";
-        }
+      }
 
-        array.push(env.svg.append("path")
+      array.push(env.svg.append("path")
           .datum(path.map((vert) => env.vertices[vert-1]))
           .attr("fill", color)
           .attr('fill-opacity', env.opacity)
@@ -1485,11 +1645,15 @@
           .attr("stroke", env.stroke || color)
           .attr("d", env.local.line));
 
-      });
+    });
 
-      env.local.area = array;
-      return env.local.area;
-    }
+    //env.local.area = array;
+    return array;
+  }
+
+  //this IS an instance
+  g2d.Polygon = async (args, env) => {
+    let points = await interpretate(args[0], env);
   
     env.local.line = d3.line()
           .x(function(d) { return env.xAxis(d[0]) })
@@ -1536,11 +1700,7 @@
   }
   
   g2d.Polygon.update = async (args, env) => {
-    let points = await interpretate(args[0], env);
-
-    if (env.vertices) {
-      throw 'update method of vertices is not supported'
-    }    
+    let points = await interpretate(args[0], env);  
 
     if (env.local.polygons) {
       throw 'update method for many polygons in not supported'
@@ -1577,16 +1737,15 @@
 
   g2d["Charting`DelayedMouseEffect"] = g2d.IdentityFunction
 
-  g2d.Line = async (args, env) => {
+  g2dComplex.Line = async (args, env) => {
     console.log('drawing a line');
     
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
     const y = env.yAxis;
 
-    if (env.vertices) {
-      //vertex mode
-      if (!data[0][0]) {
+    //difference case for verices
+    if (!data[0][0]) {
 
         const object = env.svg.append("path")
         .datum(data.map((index) => env.vertices[index-1]))
@@ -1620,8 +1779,37 @@
 
         return gr;
       }
+  }
+
+  g2d.BezierCurve = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = d3.path(); 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    path.moveTo(...points[0]);
+    for (let i=1; i<points.length - 2; i+=3) {
+        path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]) 
     }
+
+    return env.svg.append("path")
+        .attr("fill", "none")
+        .attr("vector-effect", "non-scaling-stroke")
+        .attr('opacity', env.opacity)
+        .attr("stroke", env.color)
+        .attr("stroke-width", env.strokeWidth)
+        .attr("d", path); 
+  }
+
+  g2d.Line = async (args, env) => {
+
     
+    let data = await interpretate(args[0], env);
+    const x = env.xAxis;
+    const y = env.yAxis;
 
     const uid = uuidv4();
     env.local.uid = uid;
@@ -1707,10 +1895,6 @@
     const y = env.yAxis;
 
     let obj;
-
-    if (env.vertices) {
-      throw 'Update mode for vertices in Line is not supported for now!';
-    }
 
 
     switch(arrDepth(data)) {
@@ -1866,6 +2050,64 @@
     return object;
   }
 
+  g2dComplex.Disk = async (args, env) => {
+    if (args.length > 2) {
+      throw('Graphics complex with arcs is not supported');
+    }
+
+    let data = await interpretate(args[0], env);
+    let radius = 1; 
+
+    if (args.length > 1) {
+      radius = await interpretate(args[1], env);
+      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+    }
+
+    //console.warn(args);
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    if (!data[0]) {
+      //single vertice
+      const vertex = env.vertices[data-1];
+      const coords = [x(vertex[0]), y(vertex[1])];
+      const r = x(radius) - x(0);
+
+      const object = env.svg
+      .append("circle")
+      .attr("vector-effect", "non-scaling-stroke")
+        .attr("cx", coords[0])
+        .attr("cy", coords[1])
+        .attr("r", r)
+        .style("stroke", 'none')
+        .style("fill", env.color)
+        .style("opacity", env.opacity);
+
+  
+      return object;
+
+    } else {
+      const object = [];
+      const r = x(radius) - x(0);
+
+      data.map((index) => env.vertices[index-1]).map((disk) => {
+        object.push(env.svg
+        .append("circle")
+        .attr("vector-effect", "non-scaling-stroke")
+          .attr("cx", x(disk[0]))
+          .attr("cy", y(disk[1]))
+          .attr("r", r)
+          .style("stroke", 'none')
+          .style("fill", env.color)
+          .style("opacity", env.opacity));
+      });
+
+      return object;
+    }
+
+  }
+
 
   g2d.Disk = async (args, env) => {
     if (args.length > 2) {
@@ -1936,43 +2178,14 @@
     console.log('nothing to destroy');
     //delete env.local.area;
   }
-
-  g2d.Point = async (args, env) => {
+  
+  g2dComplex.Point = async (args, env) => {
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
-    const y = env.yAxis;
+    const y = env.yAxis;    
 
-    if (env.vertices) {
-      if (data[0][0]) data = data.flat();
-      data = data.map((e) => env.vertices[e-1]);
-    } else {
-      const dp = arrDepth(data);
-      if (dp === 0) {
-          data = [];
-      } else {
-        if (dp < 2) {
-          data = [data];
-        }
-      }
-    }
-
-
-
-    const uid = uuidv4();
-    env.local.uid = uid;
-
-    /*const object = env.svg.append('g')
-    .selectAll()
-    .data(data)
-    .enter()
-    .append("circle")
-    .attr("vector-effect", "non-scaling-stroke")
-    .attr('class', "dot-"+uid)
-      .attr("cx", function (d) { return x(d[0]); } )
-      .attr("cy", function (d) { return y(d[1]); } )
-      .attr("r", env.pointSize*100)
-      .style("fill", env.color)
-      .style("opacity", env.opacity);*/
+    if (data[0][0]) data = data.flat();
+    data = data.map((e) => env.vertices[e-1]);
 
     const object = env.svg.append('g')
     .style("stroke-width", env.pointSize*100*2)
@@ -2025,6 +2238,66 @@
       }
     });
 
+
+    return object;
+
+  }
+
+  g2d.Point = async (args, env) => {
+    let data = await interpretate(args[0], env);
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+      const dp = arrDepth(data);
+      if (dp === 0) {
+          data = [];
+      } else {
+        if (dp < 2) {
+          data = [data];
+        }
+      }
+
+
+
+    const uid = uuidv4();
+    env.local.uid = uid;
+
+    /*const object = env.svg.append('g')
+    .selectAll()
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('class', "dot-"+uid)
+      .attr("cx", function (d) { return x(d[0]); } )
+      .attr("cy", function (d) { return y(d[1]); } )
+      .attr("r", env.pointSize*100)
+      .style("fill", env.color)
+      .style("opacity", env.opacity);*/
+
+    const object = env.svg.append('g')
+    .style("stroke-width", env.pointSize*100*2)
+    .style("stroke-linecap", "round")
+    .style("stroke", env.color)
+    .style("opacity", env.opacity);
+
+    const points = [];
+
+    //a hack to make non-scalable 
+    //https://muffinman.io/blog/svg-non-scaling-circle-and-rectangle/
+    let color;
+
+    data.forEach((d, vert) => {
+
+      
+        points.push(
+         object.append("path")
+        .attr("d", `M ${x(d[0])} ${y(d[1])} l 0.0001 0`) 
+        .attr("vector-effect", "non-scaling-stroke")
+        );
+      
+    });
+
     env.local.points = points;
     env.local.object = object;
     
@@ -2034,7 +2307,6 @@
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
     
-    if (env.vertices) throw('vertices update method is not supported!');
 
     const dp = arrDepth(data);
     if (dp === 0) {
