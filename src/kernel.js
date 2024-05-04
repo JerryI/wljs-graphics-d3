@@ -7,6 +7,9 @@
     if (arr[0][0][0].length === undefined)  return 3;
   } 
 
+  core['Charting`DateTicksFunction'] = () => 'DateTicksFunction'
+  core['DateListPlot'] = () => {}
+
   function transpose(matrix) {
     let newm = structuredClone(matrix);
     for (var i = 0; i < matrix.length; i++) {
@@ -223,15 +226,45 @@
       options.FrameTicks = await interpretate(options.FrameTicks, env);
       //I HATE YOU WOLFRAM
 
+      ticks = [true, true, true, true];
+
       //left,right,  bottom,top
       if (Array.isArray(options.FrameTicks)) {
         if (Array.isArray(options.FrameTicks[0])) {
+          
           if (Array.isArray(options.FrameTicks[0][0])) {
-            if (Number.isInteger(options.FrameTicks[0][0][0]) || Array.isArray(options.FrameTicks[0][0][0])) {
-              ticks = [options.FrameTicks[0][0], options.FrameTicks[1][0], options.FrameTicks[0][1], options.FrameTicks[1][1]];
+            
+            if (Number.isInteger(options.FrameTicks[0][0][0]) || (typeof options.FrameTicks[0][0] === 'string') || Array.isArray(options.FrameTicks[0][0][0])) {
+              ticks[1] = options.FrameTicks[0][0];           
+              ticks[3] = options.FrameTicks[0][1];              
+              
+              //, options.FrameTicks[1][0], options.FrameTicks[0][1], options.FrameTicks[1][1]];
             }
+          } else {
+            ticks[1] = options.FrameTicks[0][0];           
+            ticks[3] = options.FrameTicks[0][1];            
           }
+ 
+
         }
+
+        if (Array.isArray(options.FrameTicks[1])) {
+          //console.error(options.FrameTicks[1]);
+          if (Array.isArray(options.FrameTicks[1][0])) {
+            
+            if (Number.isInteger(options.FrameTicks[1][0][0]) || (typeof options.FrameTicks[1][0] === 'string') || Array.isArray(options.FrameTicks[1][0][0])) {
+              ticks[0] = options.FrameTicks[1][0];
+              ticks[2] = options.FrameTicks[1][1];              
+              
+              //, options.FrameTicks[1][0], options.FrameTicks[0][1], options.FrameTicks[1][1]];
+            }
+          } else  {
+            ticks[0] = options.FrameTicks[1][0];
+            ticks[2] = options.FrameTicks[1][1]; 
+          }
+
+
+        }        
       }
     }
 
@@ -417,7 +450,7 @@
     let gTX = undefined;
     let gRY = undefined;
     
-      let x = d3.scaleLinear()
+    let x = d3.scaleLinear()
       .domain(range[0])
       .range([ 0, width ]);
 
@@ -427,25 +460,92 @@
     console.log(axis);
     
     if (ticks) {
-      if (Array.isArray(ticks[0][0])) {
-        const labels = ticks[0].map((el) => el[1]);
-        xAxis = xAxis.tickValues(ticks[0].map((el) => el[0])).tickFormat(function (d, i) {
-          return labels[i];
-        });
+      if (!ticks[0]) {
+        xAxis = xAxis.tickValues([]);
       } else {
-        xAxis = xAxis.tickValues(ticks[0]);
-      }      
+        if (typeof ticks[0] === 'string') {
+          switch(ticks[0]) {
+            case 'Automatic':
+              break;
+            
+            case 'None':
+              xAxis = xAxis.tickValues([]);
+              break;
+
+            case 'DateTicksFunction':
+                //convert to a proper format
+                x = d3.scaleTime()
+                .domain(range[0].map(e => e*1000 - 2208996000*1000))
+                .range([ 0, width ]);
+                txAxis = d3.axisTop(x);
+                xAxis = d3.axisBottom(x);
+                const temp = x;
+                x = (d) => temp(d*1000 - 2208996000*1000);
+                x.copy = temp.copy 
+                x.range = temp.range 
+                x.domain = temp.domain
+                x.invert = temp.invert
+              break;
+
+
+            default:
+          }
+        } else if (ticks[0] === true) {
+          console.log('Default ticks');
+        } else if (Array.isArray(ticks[0][0])) {
+          const labels = ticks[0].map((el) => el[1]);
+          xAxis = xAxis.tickValues(ticks[0].map((el) => el[0])).tickFormat(function (d, i) {
+            return labels[i];
+          });
+        } else {
+          xAxis = xAxis.tickValues(ticks[0]);
+        }  
+      }    
     }
+
     if (ticks) {
-      if (Array.isArray(ticks[2][0])) {
-        const labels = ticks[2].map((el) => el[1]);
-        txAxis = txAxis.tickValues(ticks[2].map((el) => el[0])).tickFormat(function (d, i) {
-          return labels[i];
-        });
+      if (!ticks[2]) {
+        txAxis = txAxis.tickValues([]);
       } else {
-        txAxis = txAxis.tickValues(ticks[2]);
-      }
+        if (typeof ticks[2] === 'string') {
+          switch(ticks[2]) {
+            case 'Automatic':
+              break;
+            
+            case 'None':
+              txAxis = txAxis.tickValues([]);
+              break;
+
+            case 'DateTicksFunction':
+                x = d3.scaleTime()
+                .domain(range[0].map(e => e*1000 - 2208996000*1000))
+                .range([ 0, width ]);
+                txAxis = d3.axisTop(x);
+                xAxis = d3.axisBottom(x);
+                const temp = x;
+                x = (d) => temp(d*1000 - 2208996000*1000);
+                x.copy = temp.copy 
+                x.range = temp.range 
+                x.domain = temp.domain
+                x.invert = temp.invert
+              break;
+
+
+            default:
+          }
+        } else if (ticks[2] === true) {
+          console.log('Default ticks');
+        } else if (Array.isArray(ticks[2][0])) {
+          const labels = ticks[2].map((el) => el[1]);
+          txAxis = txAxis.tickValues(ticks[2].map((el) => el[0])).tickFormat(function (d, i) {
+            return labels[i];
+          });
+        } else {
+          txAxis = txAxis.tickValues(ticks[2]);
+        }  
+      }    
     }
+
 
     if (!tickLabels[0]) xAxis = xAxis.tickFormat(x => ``);
     if (!tickLabels[1]) txAxis = txAxis.tickFormat(x => ``);
@@ -468,26 +568,93 @@
     let ryAxis = d3.axisRight(y);
 
     if (ticks) {
-      if (Array.isArray(ticks[1][0])) {
-        const labels = ticks[1].map((el) => el[1]);
-        yAxis = yAxis.tickValues(ticks[1].map((el) => el[0])).tickFormat(function (d, i) {
-          return labels[i];
-        });
+      if (!ticks[1]) {
+        yAxis = yAxis.tickValues([]);
       } else {
-        yAxis = yAxis.tickValues(ticks[1]);
-      }  
+        if (typeof ticks[1] === 'string') {
+          switch(ticks[1]) {
+            case 'Automatic':
+              break;
+            
+            case 'None':
+              yAxis = yAxis.tickValues([]);
+              break;
+
+            case 'DateTicksFunction':
+              y = d3.scaleTime()
+              .domain(range[1].map(e => e*1000 - 2208996000*1000))
+              .range([ 0, height ]);
+              ryAxis = d3.axisRight(y);
+              yAxis = d3.axisLeft(y);
+
+              const proxy = y;
+              y = (d) => proxy(d*1000 - 2208996000*1000);
+              y.copy = proxy.copy 
+              y.range = proxy.range 
+              y.domain = proxy.domain
+              y.invert = proxy.invert             
+              break;
+
+
+            default:
+          }
+        } else if (ticks[1] === true) {
+          console.log('Default ticks');
+        } else if (Array.isArray(ticks[1][0])) {
+          const labels = ticks[1].map((el) => el[1]);
+          yAxis = yAxis.tickValues(ticks[1].map((el) => el[0])).tickFormat(function (d, i) {
+            return labels[i];
+          });
+        } else {
+          yAxis = yAxis.tickValues(ticks[1]);
+        }  
+      }    
     }
 
     if (ticks) {
-      if (Array.isArray(ticks[3][0])) {
-        const labels = ticks[3].map((el) => el[1]);
-        ryAxis = ryAxis.tickValues(ticks[3].map((el) => el[0])).tickFormat(function (d, i) {
-          return labels[i];
-        });
+      if (!ticks[3]) {
+        ryAxis = ryAxis.tickValues([]);
       } else {
-        ryAxis = ryAxis.tickValues(ticks[3]);
-      }        
-    }
+        if (typeof ticks[3] === 'string') {
+          switch(ticks[3]) {
+            case 'Automatic':
+              break;
+            
+            case 'None':
+              ryAxis = ryAxis.tickValues([]);
+              break;
+
+            case 'DateTicksFunction':
+              y = d3.scaleTime()
+              .domain(range[1].map(e => e*1000 - 2208996000*1000))
+              .range([ 0, height ]);
+              ryAxis = d3.axisRight(y);
+              yAxis = d3.axisLeft(y);
+
+              const proxy = y;
+              y = (d) => proxy(d*1000 - 2208996000*1000);
+              y.copy = proxy.copy 
+              y.range = proxy.range 
+              y.domain = proxy.domain
+              y.invert = proxy.invert 
+              break;
+
+
+            default:
+          }
+        } else if (ticks[3] === true) {
+          console.log('Default ticks');
+        } else if (Array.isArray(ticks[3][0])) {
+          const labels = ticks[3].map((el) => el[1]);
+          ryAxis = ryAxis.tickValues(ticks[3].map((el) => el[0])).tickFormat(function (d, i) {
+            return labels[i];
+          });
+        } else {
+          ryAxis = ryAxis.tickValues(ticks[3]);
+        }  
+      }    
+    }    
+
 
     if (!tickLabels[2]) yAxis = yAxis.tickFormat(x => ``);
     if (!tickLabels[3]) ryAxis = ryAxis.tickFormat(x => ``);    
