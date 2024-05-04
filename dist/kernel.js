@@ -4366,7 +4366,18 @@ function arrDepth(arr) {
   
   g2d.Polygon.destroy = (args, env) => {
     console.log('area destroyed');
-    delete env.local.area;
+
+    if (!env.local) return;
+    if (env.local.area) {
+      env.local.area.remove();
+      delete env.local.area;
+      return;
+    }
+
+    if (env.local.polygons) {
+      env.local.polygons.remove();
+      delete env.local.polygons;
+    }    
   };
   
   g2d.Polygon.virtual = true; //for local memeory and dynamic binding
@@ -4522,6 +4533,8 @@ function arrDepth(arr) {
         .x(function(d) { return env.xAxis(d[0]) })
         .y(function(d) { return env.yAxis(d[1]) });
 
+    env.local.object = object;
+
     return object;
   };
 
@@ -4631,6 +4644,15 @@ function arrDepth(arr) {
   g2d.Line.destroy = (args, env) => {
     console.log('nothing to destroy');
     //delete env.local.area;
+    if (!env.local) return;
+    if (!env.local.object) return;
+    if (Array.isArray(env.local.object)) {
+      env.local.object.forEach((o) => o.remove());
+    } else {
+      env.local.object.remove();
+    }
+    
+    delete env.local.object;
   };
 
   g2d.Circle = async (args, env) => {
@@ -4819,6 +4841,11 @@ function arrDepth(arr) {
 
   g2d.Disk.destroy = (args, env) => {
     console.log('nothing to destroy');
+    if (!env.local) return;
+    if (!env.local.object) return;
+    env.local.object.remove();
+    
+    delete env.local.object;
     //delete env.local.area;
   };
   
@@ -5002,7 +5029,15 @@ function arrDepth(arr) {
 
   g2d.Point.destroy = (args, env) => {
     console.log('nothing to destroy');
-    //delete env.local.area;
+    if (!env.local) return;
+    if (!env.local.object) return;
+    if (Array.isArray(env.local.object)) {
+      env.local.object.forEach((o) => o.remove());
+    } else {
+      env.local.object.remove();
+    }
+    
+    delete env.local.object;
   };
 
   g2d.EventListener = async (args, env) => {
@@ -5412,6 +5447,11 @@ function arrDepth(arr) {
 
   g2d.Rectangle.destroy = (args, env) => {
     console.log('nothing to destroy');
+    if (!env.local) return;
+    if (!env.local.rect) return;
+    env.local.rect.remove();
+
+    delete env.local.rect;
     //delete env.local.area;
   };
 
