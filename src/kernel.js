@@ -139,6 +139,8 @@
 
     console.log(options);
 
+    let label = options.PlotLabel;
+
     /**
      * @type {HTMLElement}
      */
@@ -386,7 +388,7 @@
       .attr("transform",
             "translate(" + (margin.left + padding.left) + "," + margin.top + ")");
 
-    
+
     
     let range = [[-1.15,1.15],[-1.15,1.15]];
     let unknownRanges = true;
@@ -716,7 +718,22 @@
     if (axis[1]) gY = svg.append("g").call(yAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
 
+    let labelStyle = {...env};
 
+    if (options.LabelStyle) {
+      await interpretate(options.LabelStyle, labelStyle);
+    }
+
+    if (label) {
+      label = await interpretate(label, labelStyle);
+      svg.append("text")
+              .attr("x", (width / 2) + labelStyle.offset.x)             
+              .attr("y", 0 - (margin.top / 2) + labelStyle.offset.y)
+              .attr("text-anchor", "middle") 
+              .attr('fill', labelStyle.color)
+              .style("font-size", labelStyle.fontsize)  
+              .text(label);
+    }
 
     if (options.AxesLabel && !framed) {
       
