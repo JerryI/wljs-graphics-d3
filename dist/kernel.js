@@ -5273,6 +5273,42 @@ function arrDepth(arr) {
         .on("start", clicked));
   };
 
+  g2d.EventListener.mousedown = (uid, object, env) => {
+
+    console.log('mousedown event generator');
+    console.log(env.local);
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
+
+    const updatePos = throttle((x,y) => {
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'click');
+    });
+  
+    function clicked(event, d) {
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
+    }
+  
+    object.on("mousedown", clicked);
+  };  
+
+  g2d.EventListener.mouseup = (uid, object, env) => {
+
+    console.log('mouseup event generator');
+    console.log(env.local);
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
+
+    const updatePos = throttle((x,y) => {
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'click');
+    });
+  
+    function clicked(event, d) {
+      updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
+    }
+  
+    object.on("mouseup", clicked);
+  };
+
   g2d.EventListener.mousemove = (uid, object, env) => {
 
     console.log('mouse event generator');
