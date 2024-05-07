@@ -2258,10 +2258,33 @@
       .style("fill", 'none')
       .style("opacity", env.opacity);
 
+    env.local.object = object;
+
     return object;
   }
 
-  //g2d.Circle.destroy = () => {}
+  g2d.Circle.update = async (args, env) => {
+    let data = await interpretate(args[0], env);
+    let radius = 1; 
+
+    if (args.length > 1) {
+      radius = await interpretate(args[1], env);
+      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+    }
+
+    const x = env.xAxis;
+    const y = env.yAxis;    
+
+    env.local.object.maybeTransition(env.transitionType, env.transitionDuration).attr("cx", x(data[0]) )
+    .attr("cy", y(data[1]) )
+    .attr("r", x(radius) - x(0));
+
+    return env.local.object;
+  }
+
+  g2d.Circle.destroy = () => {}
+
+  g2d.Circle.virtual = true
 
   g2d._arc = async (args, env) => {
     let data = await interpretate(args[0], env);
