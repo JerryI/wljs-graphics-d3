@@ -2555,6 +2555,37 @@ function arrDepth(arr) {
   
   });
 
+  g2d["Graphics`Canvas"] = async (args, env) => {
+    //const copy = {...env};
+    //modify local axes to transform correctly the coordinates of scaled container
+    let t = {k: 1, x:0, y:0};
+    env.onZoom.push((tranform) => {
+      t = tranform;
+    });
+
+    const copy = {xAxis: env.xAxis, yAxis: env.yAxis};
+
+    env.xAxis = (x) => {
+      return 0;
+    };
+
+    env.yAxis = (y) => {
+      return 0;
+    };
+
+    env.xAxis.invert = (x) => {
+      const X = (x - t.x - env.panZoomEntites.left) / t.k;
+      return copy.xAxis.invert(X);
+    };
+
+    env.yAxis.invert = (y) => {
+      const Y = (y - t.y - env.panZoomEntites.top) / t.k;
+      return copy.yAxis.invert(Y);
+    };
+
+    return env.panZoomEntites.canvas
+  };
+
   g2d.HoldForm = async (args, env) => await interpretate(args[0], env);
   g2d.HoldForm.update = async (args, env) => await interpretate(args[0], env);
   //g2d.HoldForm.destroy = async (args, env) => await interpretate(args[0], env)
@@ -3188,6 +3219,7 @@ function arrDepth(arr) {
     env.strokeWidth = 1.5;
     env.pointSize = 0.013;
     env.arrowHead = 1.0;
+    env.onZoom = [];
     env.transitionDuration = 50;
     env.transitionType = transitionType;
 
@@ -3365,9 +3397,13 @@ function arrDepth(arr) {
         }
       }
 
+
+
       env.panZoomEntites = {
         canvas: listenerSVG,
         svg: env.svg,
+        left: margin.left + padding.left,
+        top: margin.top,
         gX: gX,
         gY: gY,
         gTX: gTX,
@@ -3562,7 +3598,11 @@ function arrDepth(arr) {
         if (gTX)
           gTX.call(txAxis.scale(transform.rescaleX(x)));
         if (gRY)
-          gRY.call(ryAxis.scale(transform.rescaleY(y)));          
+          gRY.call(ryAxis.scale(transform.rescaleY(y)));      
+        
+        env.onZoom.forEach((h)=>{
+          h(transform);
+        });
       }
   
     
@@ -5059,12 +5099,13 @@ function arrDepth(arr) {
 
   g2d.EventListener = async (args, env) => {
     const rules = await interpretate(args[1], env);
+    const copy = {...env};
 
-    let object = await interpretate(args[0], env);
+    let object = await interpretate(args[0], copy);
     if (Array.isArray(object)) object = object[0];
 
     rules.forEach((rule)=>{
-      g2d.EventListener[rule.lhs](rule.rhs, object, env);
+      g2d.EventListener[rule.lhs](rule.rhs, object, copy);
     });
 
     return null;
