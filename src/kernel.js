@@ -2795,13 +2795,12 @@
       server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'click')
     });
   
-    function clicked(event, d) {
-      //if (event.altKey)
-        //console.log(event);
-        updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
+    function clicked(event, p) {
+      if (!event.altKey)
+        updatePos(xAxis.invert(p[0]), yAxis.invert(p[1]))
     }
   
-    object.on("click", clicked);
+    object.on("click", (e)=>clicked(e, d3.pointer(e)));
   };  
 
   g2d.EventListener.mousedown = (uid, object, env) => {
@@ -2812,14 +2811,15 @@
     const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'click')
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'mousedown')
     });
   
-    function clicked(event, d) {
-      updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
+    function clicked(event, p) {
+      //if (event.altKey)
+        updatePos(xAxis.invert(p[0]), yAxis.invert(p[1]))
     }
   
-    object.on("mousedown", clicked);
+    object.on("mousedown", (e)=>clicked(e, d3.pointer(e)));
   };  
 
   g2d.EventListener.mouseup = (uid, object, env) => {
@@ -2830,19 +2830,20 @@
     const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'click')
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'mouseup')
     });
   
-    function clicked(event, d) {
-      updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
+    function clicked(event, p) {
+      //if (event.altKey)
+        updatePos(xAxis.invert(p[0]), yAxis.invert(p[1]))
     }
   
-    object.on("mouseup", clicked);
-  };
+    object.on("mouseup", (e)=>clicked(e, d3.pointer(e)));
+  };  
 
   g2d.EventListener.altclick = (uid, object, env) => {
 
-    console.log('altclick event generator');
+    console.log('click event generator');
     console.log(env.local);
     const xAxis = env.xAxis;
     const yAxis = env.yAxis;
@@ -2851,12 +2852,12 @@
       server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'altclick')
     });
   
-    function clicked(event, d) {
+    function clicked(event, p) {
       if (event.altKey)
-        updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
+        updatePos(xAxis.invert(p[0]), yAxis.invert(p[1]))
     }
   
-    object.on("click", clicked);
+    object.on("click", (e)=>clicked(e, d3.pointer(e)));
   };  
 
   g2d.EventListener.keydown = (uid, object, env) => {
@@ -2878,7 +2879,7 @@
       updatePos(xAxis.invert(arr[0]), yAxis.invert(arr[1]))
     }
   
-    object.on("mousemove", e => moved(d3.pointer(e)));
+    object.on("mousemove", (e) => moved(d3.pointer(e)));
   };   
 
   g2d.EventListener.mouseover = (uid, object, env) => {
