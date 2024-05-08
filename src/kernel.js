@@ -2839,19 +2839,20 @@
     object.on("mouseup", clicked);
   };
 
-  g2d.EventListener.ctrlclick = (uid, object, env) => {
+  g2d.EventListener.altclick = (uid, object, env) => {
 
-    console.log('mouseup event generator');
+    console.log('altclick event generator');
     console.log(env.local);
     const xAxis = env.xAxis;
     const yAxis = env.yAxis;
 
     const updatePos = throttle((x,y) => {
-      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'ctrlclick')
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'altclick')
     });
   
     function clicked(event, d) {
-      if (event.ctrlKey)
+      if (event.altKey)
+        console.log(event);
         updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
     }
   
