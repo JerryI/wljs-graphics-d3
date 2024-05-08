@@ -5309,6 +5309,25 @@ function arrDepth(arr) {
     object.on("mouseup", clicked);
   };
 
+  g2d.EventListener.ctrlclick = (uid, object, env) => {
+
+    console.log('mouseup event generator');
+    console.log(env.local);
+    const xAxis = env.xAxis;
+    const yAxis = env.yAxis;
+
+    const updatePos = throttle((x,y) => {
+      server.kernel.emitt(uid, `{${x}, ${y}}`.replace('e', '*^').replace('e', '*^'), 'ctrlclick');
+    });
+  
+    function clicked(event, d) {
+      if (event.ctrlKey)
+        updatePos(xAxis.invert(event.x), yAxis.invert(event.y));
+    }
+  
+    object.on("click", clicked);
+  };  
+
   g2d.EventListener.keydown = (uid, object, env) => {
     console.error('You cannot listen keys from the SVG element!');
   };  
