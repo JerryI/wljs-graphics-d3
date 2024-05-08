@@ -412,6 +412,9 @@
       env.svgHeight = height + margin.top + margin.bottom + padding.bottom;
     }
 
+    //make it focusable
+    svg.attr('tabindex', '0');
+
     const listenerSVG = svg;
     
     svg = svg  
@@ -1146,6 +1149,7 @@
   g2d.SVGAttribute.virtual = true;
 
   import labToRgb from '@fantasy-color/lab-to-rgb'
+import { enabled } from 'ansi-colors';
 
   g2d.LABColor =  async (args, env) => {
     let lab;
@@ -2657,6 +2661,8 @@
     let object = await interpretate(args[0], copy);
     if (Array.isArray(object)) object = object[0];
 
+    if (!object.on_list) object.on_list = {};
+
     rules.forEach((rule)=>{
       g2d.EventListener[rule.lhs](rule.rhs, object, copy);
     });
@@ -2800,7 +2806,16 @@
         updatePos(xAxis.invert(p[0]), yAxis.invert(p[1]))
     }
   
-    object.on("click", (e)=>clicked(e, d3.pointer(e)));
+    if ('click' in object.on_list) {
+      object.on_list.click.push((e)=>clicked(e, d3.pointer(e)));
+    } else {
+      object.on_list.click = [
+        (e)=>clicked(e, d3.pointer(e))
+      ];
+      object.on("click", (e)=>{
+        for (let i=0; i<object.on_list.click.length; ++i) object.on_list.click[i](e)
+      });
+    }
   };  
 
   g2d.EventListener.mousedown = (uid, object, env) => {
@@ -2857,11 +2872,94 @@
         updatePos(xAxis.invert(p[0]), yAxis.invert(p[1]))
     }
   
-    object.on("click", (e)=>clicked(e, d3.pointer(e)));
+    if ('click' in object.on_list) {
+      object.on_list.click.push((e)=>clicked(e, d3.pointer(e)));
+    } else {
+      object.on_list.click = [
+        (e)=>clicked(e, d3.pointer(e))
+      ];
+      object.on("click", (e)=>{
+        for (let i=0; i<object.on_list.click.length; ++i) object.on_list.click[i](e)
+      });
+    }
+  };  
+
+  g2d.EventListener.capturekeydown = (uid, object, env) => {
+    //console.error('You cannot listen keys from the SVG element!');
+    let focus;
+    let enabled = true;
+    const el = object;
+    //force focus
+    focus = () => {
+      if (!enabled) return;
+      el.node().focus();
+      enabled = false;
+    }
+
+    const addClickListener = (func) => {
+      if ('click' in object.on_list) {
+        object.on_list.click.push(func);
+      } else {
+        object.on_list.click = [
+          func
+        ];
+        object.on("click", (e)=>{
+          for (let i=0; i<object.on_list.click.length; ++i) object.on_list.click[i](e)
+        });
+      }
+    }
+
+    addClickListener(focus);
+
+    el.on('blur', ()=>{
+      enabled = true;
+    });
+
+    //console.error(el.on);
+
+    el.node().addEventListener('keydown', (e) => {
+      //console.log(e);
+      server.kernel.emitt(uid, '"'+e.code+'"', 'capturekeydown');
+      e.preventDefault();
+    });
   };  
 
   g2d.EventListener.keydown = (uid, object, env) => {
-    console.error('You cannot listen keys from the SVG element!');
+    //console.error('You cannot listen keys from the SVG element!');
+    let focus;
+    let enabled = true;
+    const el = object;
+    //force focus
+    focus = () => {
+      if (!enabled) return;
+      el.node().focus();
+      enabled = false;
+    }
+
+    const addClickListener = (func) => {
+      if ('click' in object.on_list) {
+        object.on_list.click.push(func);
+      } else {
+        object.on_list.click = [
+          func
+        ];
+        object.on("click", (e)=>{
+          for (let i=0; i<object.on_list.click.length; ++i) object.on_list.click[i](e)
+        });
+      }
+    }
+
+    addClickListener(focus);
+
+    el.on('blur', ()=>{
+      enabled = true;
+    });
+
+    el.addEventListener('keydown', (e) => {
+      //console.log(e);
+      server.kernel.emitt(uid, '"'+e.code+'"', 'keydown');
+      //e.preventDefault();
+    });
   };  
 
   g2d.EventListener.mousemove = (uid, object, env) => {
