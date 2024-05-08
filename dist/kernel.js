@@ -5309,6 +5309,10 @@ function arrDepth(arr) {
     object.on("mouseup", clicked);
   };
 
+  g2d.EventListener.keydown = (uid, object, env) => {
+    console.error('You cannot listen keys from the SVG element!');
+  };  
+
   g2d.EventListener.mousemove = (uid, object, env) => {
 
     console.log('mouse event generator');
@@ -5325,7 +5329,7 @@ function arrDepth(arr) {
     }
   
     object.on("mousemove", e => moved(d3.pointer(e)));
-  };  
+  };   
 
   g2d.EventListener.mouseover = (uid, object, env) => {
 
