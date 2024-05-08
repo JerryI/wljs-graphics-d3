@@ -2796,12 +2796,13 @@
     });
   
     function clicked(event, d) {
-      updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
+      //if (event.altKey)
+        //console.log(event);
+        updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
     }
   
-    object.call(d3.drag()
-        .on("start", clicked));
-  };
+    object.on("click", clicked);
+  };  
 
   g2d.EventListener.mousedown = (uid, object, env) => {
 
@@ -2852,7 +2853,6 @@
   
     function clicked(event, d) {
       if (event.altKey)
-        console.log(event);
         updatePos(xAxis.invert(event.x), yAxis.invert(event.y))
     }
   
