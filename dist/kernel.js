@@ -3204,8 +3204,9 @@ function arrDepth(arr) {
     let range = [[-1.15,1.15],[-1.15,1.15]];
     let unknownRanges = true;
 
-    if (options.PlotRange) {
-      const r = await interpretate(options.PlotRange, env);
+    if (options.PlotRange || env.plotRange) {
+      const r = env.plotRange || (await interpretate(options.PlotRange, env));
+
       if (Number.isFinite(r[0][0])) {
         if (Number.isFinite(r[1][0])) {
           range = r;
@@ -3701,14 +3702,21 @@ function arrDepth(arr) {
         env.element.appendChild(guiContainer);
       }
 
-
+      const instancesKeys = Object.keys(env.global.stack);
 
       await interpretate(options.Prolog, env); 
       await interpretate(args[0], env);
       await interpretate(options.Epilog, env);
 
       if (unknownRanges) {
-        console.warn('d3.js autoscale!');
+        if (env.reRendered) {
+          console.error('Something is wrong with ranges. We could not determine them properly');
+          console.warn(env);
+          return;
+        }
+
+        svg.node().style.opacity = 0;
+        console.warn('d3.js autoscale! Requires double evaluation!!!');
         //credits https://gist.github.com/mootari
         //thank you, nice guy
         
@@ -3720,21 +3728,24 @@ function arrDepth(arr) {
         let box = env.svg.node().getBBox();
 
         console.log([xsize, ysize]);
-        
-        if (!box.width) {
-          console.warn('Warning! Looks like an element was not drawn properly');
-          box.width = ImageSize[0];
-          box.height = ImageSize[0];
-          box.x = 0;
-          box.y = 0;
-          console.log(box);
-        }
-
-
-
         console.log(box);
 
+        const plotRange = [[x.invert(box.x), x.invert(box.x + box.width)], [y.invert(box.height+box.y), y.invert(box.height+box.y - box.height)]];
 
+        console.log(plotRange);
+        console.warn('Kill all created instances');
+        const created = Object.keys(env.global.stack).filter((i) => !instancesKeys.some(o => o === i));
+
+        for (const i of created) {
+          env.global.stack[i].dispose();
+        }
+
+        svg.remove();
+        container.replaceChildren();
+
+        return await g2d.Graphics(args, {...env, plotRange: plotRange, reRendered:true});
+
+        /*
         const scale = Math.min(xsize / box.width, ysize / box.height);
 
         console.log(scale);
@@ -3754,29 +3765,15 @@ function arrDepth(arr) {
         console.log(transform);
        
         
-        reScale(transform, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y);
+        reScale(transform, svg, env.svg, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y, env);
 
         if (env._zoom) {
           env._zoom.transform(listenerSVG, transform);
-        }        
+        }        */
 
         
       }
   };
-
-  const reScale = (transform, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y) => {
-      view.attr("transform", transform);
-      if (gX)
-        gX.call(xAxis.scale(transform.rescaleX(x)));
-      if (gY)
-        gY.call(yAxis.scale(transform.rescaleY(y)));
-
-      if (gTX)
-        gTX.call(txAxis.scale(transform.rescaleX(x)));
-      if (gRY)
-        gRY.call(ryAxis.scale(transform.rescaleY(y)));          
- 
-};
 
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
   g2d.Graphics.destroy = (args, env) => { console.error('Nothing to destroy...'); };
