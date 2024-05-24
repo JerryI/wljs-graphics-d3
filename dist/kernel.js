@@ -4060,6 +4060,13 @@ function arrDepth(arr) {
      ).attr("marker-end", "url(#"+uid+")"); 
 
      env.local.arrow = object;
+
+     if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+    if (env.opacityRefs) {
+      env.opacityRefs[env.root.uid] = env.root;
+    }
    
      return object;
   } else {
@@ -4107,9 +4114,21 @@ function arrDepth(arr) {
    return object;
  };
 
+ g2d.Arrow.updateColor = (args, env) => {
+  env.local.arrow.attr("stroke", env.color);
+ };
+
+  g2d.Arrow.updateOpacity = (args, env) => {
+    env.local.arrow.attr("opacity", env.opacity);
+  };
+
  g2d.Arrow.virtual = true;
 
- g2d.Arrow.destroy = async () => {};  
+ g2d.Arrow.destroy = async (args, env) => {
+  if (env.colorRefs) {
+    delete env.colorRefs[env.root.uid];
+  }
+ };  
 
   g2d.Arrowheads = async (args, env) => {
     const head = (await interpretate(args[0], env));
@@ -4159,6 +4178,13 @@ function arrDepth(arr) {
     g2d.Text.PutText(object, text, env);
 
     env.local.object = object;
+
+    if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+    if (env.opacityRefs) {
+      env.opacityRefs[env.root.uid] = env.root;
+    }
 
     return object;
   };
@@ -4242,6 +4268,14 @@ function arrDepth(arr) {
 
   g2d.Text.virtual = true;
 
+  g2d.Text.updateColor = (args, env) => {
+    env.local.object.attr("fill", env.color);
+  };
+
+  g2d.Text.updateOpacity = (args, env) => {
+    env.local.object.attr("opacity", env.opacity);
+  };  
+
   g2d.Text.update = async (args, env) => {
     const text = await interpretate(args[0], env);
     const coords = await interpretate(args[1], env);
@@ -4269,8 +4303,14 @@ function arrDepth(arr) {
   };   
 
 
-  g2d.Text.destroy = () => {
+  g2d.Text.destroy = (args, env) => {
     console.log('Nothing to destory');
+    if (env.colorRefs) {
+      delete env.colorRefs[env.root.uid];
+    }
+    if (env.opacityRefs) {
+      delete env.opacityRefs[env.root.uid];
+    }
   };
 
 
@@ -4491,7 +4531,33 @@ function arrDepth(arr) {
 
   g2d.Opacity = async (args, env) => {
     env.opacity = await interpretate(args[0], env);
+    env.exposed.opacity = env.opacity;
+
+    if (env.root.child) {
+      console.log('Dynamic env variable caught');
+
+      const refs = {};
+      env.exposed.opacityRefs = refs;
+      env.local.refs = refs;
+    }
+    return env.opacity;
   };
+
+  g2d.Opacity.update = async (args, env) => {
+    const opacity = await interpretate(args[0], env);
+    //update all mentioned refs
+    const refs = Object.values(env.local.refs);
+    for (const r of refs) {
+      r.execute({method: 'updateOpacity', opacity: opacity});
+    }
+  };
+
+  g2d.Opacity.destroy = (args, env) => {
+    delete env.local.refs;
+    //delete env.local;
+  };  
+
+  g2d.Opacity.virtual = true;
 
   g2d.GrayLevel = async (args, env) => {
     let level = await interpretate(args[0], env);
@@ -4506,22 +4572,71 @@ function arrDepth(arr) {
   };
 
   g2d.RGBColor = async (args, env) => {
+    let colorCss;
+
     if (args.length == 3) {
-      env.color = "rgb(";
-      env.color += String(Math.floor(255 * (await interpretate(args[0], env)))) + ",";
-      env.color += String(Math.floor(255 * (await interpretate(args[1], env)))) + ",";
-      env.color += String(Math.floor(255 * (await interpretate(args[2], env)))) + ")";
+      colorCss = "rgb(";
+      colorCss += String(Math.floor(255 * (await interpretate(args[0], env)))) + ",";
+      colorCss += String(Math.floor(255 * (await interpretate(args[1], env)))) + ",";
+      colorCss += String(Math.floor(255 * (await interpretate(args[2], env)))) + ")";
 
     } else {
       const a = await interpretate(args[0], env);
-      env.color = "rgb(";
-      env.color += String(Math.floor(255 * a[0])) + ",";
-      env.color += String(Math.floor(255 * a[1])) + ",";
-      env.color += String(Math.floor(255 * a[2])) + ")";      
+      colorCss = "rgb(";
+      colorCss += String(Math.floor(255 * a[0])) + ",";
+      colorCss += String(Math.floor(255 * a[1])) + ",";
+      colorCss += String(Math.floor(255 * a[2])) + ")";      
     }
+
+    if (env.root.child) {
+      console.log('Dynamic env variable caught');
+
+      const refs = {};
+      env.exposed.colorRefs = refs;
+      env.local.refs = refs;
+    }
+
+    env.exposed.color = colorCss;
+
+  
 
     return env.color;
   };
+
+  g2d.RGBColor.update = async (args, env) => {
+    let colorCss;
+
+    if (args.length == 3) {
+      colorCss = "rgb(";
+      colorCss += String(Math.floor(255 * (await interpretate(args[0], env)))) + ",";
+      colorCss += String(Math.floor(255 * (await interpretate(args[1], env)))) + ",";
+      colorCss += String(Math.floor(255 * (await interpretate(args[2], env)))) + ")";
+
+    } else {
+      const a = await interpretate(args[0], env);
+      colorCss = "rgb(";
+      colorCss += String(Math.floor(255 * a[0])) + ",";
+      colorCss += String(Math.floor(255 * a[1])) + ",";
+      colorCss += String(Math.floor(255 * a[2])) + ")";      
+    }
+    
+
+    //update all mentioned refs
+    const refs = Object.values(env.local.refs);
+    for (const r of refs) {
+      r.execute({method: 'updateColor', color: colorCss});
+    }
+  };
+
+  g2d.RGBColor.destroy = (args, env) => {
+    delete env.local.refs;
+    //delete env.local;
+  };
+
+  //hope it wont lag anythting
+  g2d.RGBColor.virtual = true;
+
+
 
   //g2d.RGBColor.destroy = (args, env) => {}
   //g2d.Opacity.destroy = (args, env) => {}
@@ -4660,10 +4775,37 @@ function arrDepth(arr) {
       .attr("stroke-width", env.strokeWidth)
       .attr("stroke", env.stroke || env.color)
       .attr("d", env.local.line);
-    
+
+    if (env.colorRefs) {
+        env.colorRefs[env.root.uid] = env.root;
+      }
     
     return env.local.area;
   };
+
+  g2d.Polygon.updateColor = (args, env) => {
+    if (env.local.polygons) {
+      for (const p of env.local.polygons) {
+        p.attr("fill", env.color);
+      }
+      return;
+    }
+
+    env.local.object.attr("fill", env.color);
+  };
+
+  g2d.Polygon.updateOpacity = (args, env) => {
+    if (env.local.polygons) {
+      for (const p of env.local.polygons) {
+        p.attr("fill-opacity", env.opacity);
+        p.attr('stroke-opacity', env.strokeOpacity || env.opacity);
+      }
+      return;
+    }
+
+    env.local.object.attr("fill-opacity", env.opacity);
+    env.local.object.attr('stroke-opacity', env.strokeOpacity || env.opacity);
+  }; 
   
   g2d.Polygon.update = async (args, env) => {
     let points = await interpretate(args[0], env);  
@@ -4690,6 +4832,12 @@ function arrDepth(arr) {
     console.log('area destroyed');
 
     if (!env.local) return;
+    if (env.colorRefs) {
+      delete env.colorRefs[env.root.uid];
+    }
+    if (env.opacityRefs) {
+      delete env.opacityRefs[env.root.uid];
+    }
     if (env.local.area) {
       env.local.area.remove();
       delete env.local.area;
@@ -5000,9 +5148,23 @@ function arrDepth(arr) {
       .style("opacity", env.opacity);
 
     env.local.object = object;
+    if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+    if (env.opacityRefs) {
+      env.opacityRefs[env.root.uid] = env.root;
+    }
 
     return object;
   };
+
+  g2d.Circle.updateColor = (args, env) => {
+    env.local.object.style("stroke", env.color);
+  };
+
+  g2d.Circle.updateOpacity = (args, env) => {
+    env.local.object.style("opacity", env.opacity);
+  };  
 
   g2d.Circle.update = async (args, env) => {
     let data = await interpretate(args[0], env);
@@ -5023,7 +5185,15 @@ function arrDepth(arr) {
     return env.local.object;
   };
 
-  g2d.Circle.destroy = () => {};
+  g2d.Circle.destroy = (args, env) => {
+    env.local.object.remove();
+    if (env.colorRefs) {
+      delete env.colorRefs[env.root.uid];
+    }
+    if (env.opacityRefs) {
+      delete env.opacityRefs[env.root.uid];
+    }
+  };
 
   g2d.Circle.virtual = true;
 
@@ -5152,6 +5322,13 @@ function arrDepth(arr) {
 
     env.local.object = object;
 
+    if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+    if (env.opacityRefs) {
+      env.opacityRefs[env.root.uid] = env.root;
+    }
+
     return object;
   };
 
@@ -5180,6 +5357,15 @@ function arrDepth(arr) {
     .attr("r", env.local.r);
   };
 
+  g2d.Disk.updateColor = (args, env) => {
+    env.local.object.style("fill", env.color);
+  };
+
+  g2d.Disk.updateOpacity = (args, env) => {
+    env.local.object.style("opacity", env.opacity);
+  };  
+
+
   //g2d.Disk.destroy = () => {}
 
   g2d.Disk.virtual = true;
@@ -5188,6 +5374,12 @@ function arrDepth(arr) {
     console.log('nothing to destroy');
     if (!env.local) return;
     if (!env.local.object) return;
+    if (env.colorRefs) {
+      delete env.colorRefs[env.root.uid];
+    }
+    if (env.opacityRefs) {
+      delete env.opacityRefs[env.root.uid];
+    }
     env.local.object.remove();
     
     delete env.local.object;
@@ -5296,6 +5488,13 @@ function arrDepth(arr) {
     .style("stroke", env.color)
     .style("opacity", env.opacity);
 
+    if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+    if (env.opacityRefs) {
+      env.opacityRefs[env.root.uid] = env.root;
+    }
+
     const points = [];
 
     data.forEach((d, vert) => {
@@ -5314,6 +5513,14 @@ function arrDepth(arr) {
     
     return object;
   }; 
+
+  g2d.Point.updateColor = (args, env) => {
+    env.local.object.style("stroke", env.color);
+  };
+
+  g2d.Point.updateOpacity = (args, env) => {
+    env.local.object.style("opacity", env.opacity);
+  };    
 
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
@@ -5376,6 +5583,10 @@ function arrDepth(arr) {
     console.log('nothing to destroy');
     if (!env.local) return;
     if (!env.local.object) return;
+
+    if (env.colorRefs) 
+      delete env.colorRefs[env.root.uid];
+
     if (Array.isArray(env.local.object)) {
       env.local.object.forEach((o) => o.remove());
     } else {
@@ -5886,9 +6097,24 @@ function arrDepth(arr) {
     .attr('opacity', env.opacity)
     .attr('fill', env.color);
 
+    if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+    if (env.opacityRefs) {
+      env.opacityRefs[env.root.uid] = env.root;
+    }
+
     return env.local.rect;
      
   };
+
+  g2d.Rectangle.updateColor = (args, env) => {
+    env.local.rect.attr('fill', env.color);
+  };
+
+  g2d.Rectangle.updateOpacity = (args, env) => {
+    env.local.rect.attr('opacity', env.opacity);
+  };  
 
   //g2d.Rectangle.destroy = async (args, env) => {
     //await interpretate(args[0], env);
@@ -5942,6 +6168,8 @@ function arrDepth(arr) {
     .attr('y', from[1] - size[1]) 
     .attr('width', size[0])
     .attr('height', size[1]);
+
+
   };
 
   g2d.Rectangle.virtual = true;
@@ -5950,6 +6178,12 @@ function arrDepth(arr) {
     console.log('nothing to destroy');
     if (!env.local) return;
     if (!env.local.rect) return;
+    if (env.colorRefs) {
+      delete env.colorRefs[env.root.uid];
+    }
+    if (env.opacityRefs) {
+      delete env.opacityRefs[env.root.uid];
+    }
     env.local.rect.remove();
 
     delete env.local.rect;
