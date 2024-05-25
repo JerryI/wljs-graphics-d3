@@ -117,15 +117,20 @@
   g2d.Offset = async (args, env) => {
     const list = await interpretate(args[1], env);
 
-    env.offset = {
+    /*env.offset = {
       x: env.xAxis(list[0]) - env.xAxis(0),
       y: env.yAxis(list[1]) - env.yAxis(0)
+    };*/
+
+    const offset = {
+      x: list[0],
+      y: list[1]
     };
 
-    const data = await interpretate(args[0], env);
+    const data = await interpretate(args[0], {...env, offset:offset});
     if (Array.isArray(data)) {
-      const res = data.map((el, i) => el + list[i]);
-      return [0,0];
+      const res = [env.xAxis.invert(data[0]) - env.xAxis.invert(0) + offset.x, env.xAxis.invert(data[1]) + offset.y - env.xAxis.invert(0)];
+      return res;
     }
 
     return data;
@@ -1398,6 +1403,14 @@ import { enabled } from 'ansi-colors';
   }
  }  
 
+ g2d.ImageScaled = async (args, env) => {
+    const offset = await interpretate(args[0], env);
+    return [
+      offset[0] * (env.plotRange[0][1] - env.plotRange[0][0]) + env.plotRange[0][0],
+      offset[1] * (env.plotRange[1][1] - env.plotRange[1][0]) + env.plotRange[1][0]
+    ];
+ }
+
   g2d.Arrowheads = async (args, env) => {
     const head = (await interpretate(args[0], env));
     if (Array.isArray(head)) {
@@ -1428,12 +1441,37 @@ import { enabled } from 'ansi-colors';
       .attr("font-size", env.fontsize)
       .attr("fill", env.color);
 
+    //(args);
+
     if (args.length > 2) {
-      const offset = await interpretate(args[2], env);
+      
+      const offset = (await interpretate(args[2], {...env, plotRange:[[-1,1], [-1,1]]})).map((el => Math.round(el)));
+
+      console.warn('OFFSET');
+      console.warn(offset);
+
+      if (env.offset) {
+        globalOffset = env.offset;
+      }
+
+      //console.error(offset);
+      //console.error(globalOffset);
+
 
       object
-      .attr("x", env.xAxis(coords[0] + offset[0]) + globalOffset.x)
-      .attr("y", env.yAxis(coords[1] + offset[1]) + globalOffset.y);
+      .attr("x", env.xAxis(coords[0] ) + globalOffset.x )
+      .attr("y", env.yAxis(coords[1] ) + globalOffset.y );
+
+      if (offset[0] === 0 && offset[1] === 0) {
+        object.attr("text-anchor", "middle");
+      } else if (offset[0] === -1) {
+        object.attr("text-anchor", "start");
+      } else if (offset[0] === 1) {
+        object.attr("text-anchor", "end");
+      } else {
+        console.warn(offset);
+        console.error('Unknown anchor');
+      }
 
     } else {
 
@@ -2218,6 +2256,7 @@ import { enabled } from 'ansi-colors';
 
   g2d.Line = async (args, env) => {
 
+    const globalOffset = env.offset;
     
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
@@ -2307,6 +2346,8 @@ import { enabled } from 'ansi-colors';
     let data = await interpretate(args[0], env);
     const x = env.xAxis;
     const y = env.yAxis;
+
+    
 
     let obj;
 
