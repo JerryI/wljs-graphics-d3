@@ -3139,6 +3139,7 @@ function arrDepth(arr) {
       console.log('padding: ');
       console.log(options.ImagePadding);
       options.ImagePadding = await interpretate(options.ImagePadding, env);
+      console.log(options.ImagePadding);
 
       if (options.ImagePadding === 'None') {
         margin.top = 0;
@@ -3150,7 +3151,12 @@ function arrDepth(arr) {
         margin.bottom = options.ImagePadding;
         margin.left = options.ImagePadding;
         margin.right = options.ImagePadding;
-      } else if (options.ImagePadding === "All") ; else {
+      } else if (options.ImagePadding === "All") ; else if (options.ImagePadding === false) {
+        margin.top = 0;
+        margin.bottom = 0;
+        margin.left = 0;
+        margin.right = 0;        
+      }  else {
         console.error('given ImagePadding is not supported!');
       }
     }
