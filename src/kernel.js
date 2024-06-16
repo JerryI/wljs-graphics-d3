@@ -781,6 +781,7 @@
               .attr("text-anchor", "middle") 
               .attr('fill', labelStyle.color)
               .style("font-size", labelStyle.fontsize)  
+              .style("font-family", labelStyle.fontfamily)  
               .text(label);
     }
 
@@ -1986,10 +1987,42 @@ import { enabled } from 'ansi-colors';
       color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
       env.color = "hsl("+(3.14*100*color[0]).toFixed(2)+","+color[1]+"%,"+color[2]+"%)";
+
+      if (env.root.child) {
+        console.log('Dynamic env variable caught');
+  
+        const refs = {};
+        env.exposed.colorRefs = refs;
+        env.local.refs = refs;
+      }
+  
+      env.exposed.color = env.color;
+
     } else {
       console.error('g2d: Hue must have three arguments!');
     }
   } 
+
+  g2d.Hue.update = async (args, env) => {
+    let color = await Promise.all(args.map(el => interpretate(el, env)));
+    color = hsv2hsl(...color);
+    color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
+
+    const colorCss = "hsl("+(3.14*100*color[0]).toFixed(2)+","+color[1]+"%,"+color[2]+"%)";
+
+      //update all mentioned refs
+      const refs = Object.values(env.local.refs);
+      for (const r of refs) {
+        r.execute({method: 'updateColor', color: colorCss})
+      }
+    }
+
+  g2d.Hue.destroy = (args, env) => {
+      delete env.local.refs;
+      //delete env.local;
+  }    
+
+  g2d.Hue.virtual = true;
   
   //g2d.Hue.destroy = (args, env) => {}
 
@@ -3663,21 +3696,348 @@ import { enabled } from 'ansi-colors';
     console.warn('Date Object is not supported for now');
   }
 
+  const numericAccelerator = {};
+  numericAccelerator.TypeReal    = {}
+  numericAccelerator.TypeInteger = {}
+
+  const types = {
+    Real64: {
+      context: numericAccelerator.TypeReal,
+      constructor: Float64Array
+    },
+    Real32: {
+      context: numericAccelerator.TypeReal,
+      constructor: Float32Array
+    },
+    Integer32: {
+      context: numericAccelerator.TypeInteger,
+      constructor: Int32Array
+    },
+    Integer64: {
+      context: numericAccelerator.TypeInteger,
+      constructor: BigInt64Array
+    },
+    Integer16: {
+      context: numericAccelerator.TypeInteger,
+      constructor: Int16Array
+    },   
+    Integer8: {
+      context: numericAccelerator.TypeInteger,
+      constructor: Int8Array
+    },  
+    UnsignedInteger32: {
+      context: numericAccelerator.TypeInteger,
+      constructor: Uint32Array
+    },
+    UnsignedInteger64: {
+      context: numericAccelerator.TypeInteger,
+      constructor: BigUint64Array      
+    },
+    UnsignedInteger16: {
+      context: numericAccelerator.TypeInteger,
+      constructor: Uint16Array      
+    },   
+    UnsignedInteger8: {
+      context: numericAccelerator.TypeInteger,
+      constructor: Uint8Array      
+    }
+  }
+
+  function checkDepth(array, size = []) {
+    if (Array.isArray(array)) {
+      size.push(array.length);
+      return checkDepth(array[0], size);
+    }
+    return size;
+  }
+
+  const WLNumber = new RegExp(/^(-?\d+)(.?\d*)(\*\^)?(\d*)/);
+  const isInteger = window.isNumeric;
+
+  function readArray(arr, env) {
+    if (Array.isArray(arr[1])) {
+      for (let i=1; i<arr.length; ++i) {
+        readArray(arr[i], env)
+      }
+
+      return;
+    }
+
+    env.array.set(arr.slice(1).map((el) => {
+      if (typeof el == 'string') {
+        if (isInteger(el)) return parseInt(el); //for Integers
+  
+        if (WLNumber.test(el)) {
+          //deconstruct the string
+          let [begin, floatString, digits, man, power] = el.split(WLNumber);
+        
+          if (digits === '.')
+            floatString += digits + '0';
+          else
+            floatString += digits;
+        
+          if (man)
+            floatString += 'E' + power;
+  
+        
+          return parseFloat(floatString);
+        }
+      }
+
+      return el;
+    }), env.index);
+    env.index += arr.length - 1;
+  }
+
+  numericAccelerator.NumericArray = (args, env) => {
+    //console.log(args);
+    const type = types[interpretate(args[1])];
+    //console.log('ACCELERATOR!');
+    
+    
+    const depth = [];
+    let size = (args[0].length - 1);
+    depth.push(size);
+
+    if (args[0][1][0] === 'List') {
+      size = size * (args[0][1].length - 1);
+      depth.push((args[0][1].length - 1));
+
+      if (args[0][1][1][0] === 'List') {
+        size = size * (args[0][1][1].length - 1);
+        depth.push((args[0][1][1].length - 1));
+      }
+    }
+
+    //const time = performance.now();
+    //const benchmark = [];
+    
+    const array = new type.constructor(size);
+    //benchmark.push(performance.now() - time);
+    readArray(args[0], {index: 0, array: array});
+    //benchmark.push(performance.now() - time);
+    
+    //benchmark.push(performance.now() - time);
+    //console.warn(benchmark);
+    return {buffer: array, depth: depth};
+  }
+
+  numericAccelerator.NumericArray.update = numericAccelerator.NumericArray;
+
+  //numericAccelerator.List = (args, env) => args
+
+
+
+  function moveRGBAReal(src, dest, size) {
+    var i, j = 0;
+    for (i = 0; i < size << 2; ) {
+        dest[i++] = ((src[j++] * 255) >>> 0);
+        dest[i++] = ((src[j++] * 255) >>> 0);
+        dest[i++] = ((src[j++] * 255) >>> 0);
+        dest[i++] = ((src[j++] * 255) >>> 0);
+    }    
+  }
+
+  function moveRGBReal(src, dest, size) {
+    var i, j = 0;
+    const destW = new Uint32Array(dest.buffer);
+    const alpha = 0xFF000000;  // alpha is the high byte. Bits 24-31
+    for (i = 0; i < size; i++) {
+        destW[i] = alpha + ((src[j++] * 255) >>> 0) + (((src[j++] * 255) >>> 0) << 8) + (((src[j++] * 255) >>> 0) << 16);
+    }    
+  }  
+
+  function moveGrayReal(src, dest, size) {
+    var i;
+    const destW = new Uint32Array(dest.buffer);
+    const alpha = 0xFF000000;  // alpha is the high byte. Bits 24-31
+    for (i = 0; i < size; i++) {
+        const g = (src[i]*255) >>> 0;
+        destW[i] = alpha + (g << 16) + (g << 8) + g;
+    }    
+  }
+
+  function moveRGB(src, dest, size) {
+    var i, j = 0;
+    const destW = new Uint32Array(dest.buffer);
+    const alpha = 0xFF000000;  // alpha is the high byte. Bits 24-31
+    for (i = 0; i < size; i++) {
+        destW[i] = alpha + src[j++] + (src[j++] << 8) + (src[j++] << 16);
+    }    
+  }
+
+  function moveGray(src, dest, size) {
+    var i;
+    const destW = new Uint32Array(dest.buffer);
+    const alpha = 0xFF000000;  // alpha is the high byte. Bits 24-31
+    for (i = 0; i < size; i++) {
+        const g = src[i];
+        destW[i] = alpha + (g << 16) + (g << 8) + g;
+    }    
+  }  
+
+  function moveGrayBits(src, dest, size) {
+    var i;
+    const destW = new Uint32Array(dest.buffer);
+    const alpha = 0xFF000000;  // alpha is the high byte. Bits 24-31
+    for (i = 0; i < size; i++) {
+        const g = src[i] << 8;
+        destW[i] = alpha + (g << 16) + (g << 8) + g;
+    }    
+  }   
+
+  const imageTypes = {
+    Byte: {
+      constructor: Uint8Array,
+      convert: (array) => {
+        if (array.depth.length === 3) {
+          if (array.depth[2] === 4) {
+            //console.error(array);
+            const rgba = new Uint8ClampedArray(array.buffer);
+            //moveRGB(array.buffer, rgba, size);
+            return rgba;
+            //return array.buffer;
+          }
+          if (array.depth[2] === 3) {
+            const size = array.depth[0] * array.depth[1];
+            const rgba = new Uint8ClampedArray(size << 2);
+            moveRGB(array.buffer, rgba, size);
+            return rgba;
+          }
+
+          throw 'It must be RGB or RGBA!';
+        }
+
+        if (array.depth.length === 2) {
+          const size = array.depth[0] * array.depth[1];
+          const rgba = new Uint8ClampedArray(size << 2);
+          moveGray(array.buffer, rgba, size);
+          return rgba;          
+        }
+
+        throw 'This is not an image data!';
+      }
+    },
+
+    Bit: {
+      constructor: Uint8Array,
+      convert: (array) => {
+        const size = array.depth[0] * array.depth[1];
+        const rgba = new Uint8ClampedArray(size << 2);
+        moveGrayBits(array.buffer, rgba, size);
+        return rgba;  
+      }
+    },
+
+    Real32: {
+      constructor: Float32Array,
+      convert: (array) => {
+        if (array.depth.length === 3) {
+          if (array.depth[2] === 4) {
+            const size = array.depth[0] * array.depth[1];
+            const rgba = new Uint8ClampedArray(size << 2);
+            moveRGBAReal(array.buffer, rgba, size);
+            return rgba;
+          }
+
+          if (array.depth[2] === 3) {
+            const size = array.depth[0] * array.depth[1];
+            const rgba = new Uint8ClampedArray(size << 2);
+            moveRGBReal(array.buffer, rgba, size);
+            return rgba;
+          }
+
+          throw 'It must be RGB or RGBA!';
+        }
+
+        if (array.depth.length === 2) {
+          const size = array.depth[0] * array.depth[1];
+          const rgba = new Uint8ClampedArray(size << 2);
+          moveGrayReal(array.buffer, rgba, size);
+          return rgba;          
+        }
+
+        throw 'This is not an image data!';
+      }
+    },
+
+    Real64: {
+      contructor: Float64Array,
+      convert: (array) => {
+        if (array.depth.length === 3) {
+          if (array.depth[2] === 4) {
+            const size = array.depth[0] * array.depth[1];
+            const rgba = new Uint8ClampedArray(size << 2);
+            moveRGBAReal(array.buffer, rgba, size);
+            return rgba;
+          }
+          if (array.depth[2] === 3) {
+            const size = array.depth[0] * array.depth[1];
+            const rgba = new Uint8ClampedArray(size << 2);
+            moveRGBReal(array.buffer, rgba, size);
+            return rgba;
+          }
+
+          throw 'It must be RGB or RGBA!';
+        }
+
+        if (array.depth.length === 2) {
+          const size = array.depth[0] * array.depth[1];
+          const rgba = new Uint8ClampedArray(size << 2);
+          moveGrayReal(array.buffer, rgba, size);
+          return rgba;          
+        }
+
+        throw 'This is not an image data!';
+      }
+    }
+  }
+
   g2d.Image = async (args, env) => {
     const options = await core._getRules(args, {...env, context: g2d});
 
     const time = performance.now();
-    const data = await interpretate(args[0], {...env, context: g2d, nfast:true, numeric:true, image:true});
-    const height = data.length;
-    const width = data[0].length;
+    const benchmark = [];
+    console.log(args);
 
-    console.log(width);
-    console.log(height);
-    //console.log(data);
+    let data = await interpretate(args[0], {...env, context: [numericAccelerator, g2d]});
 
+    benchmark.push(`${performance.now() - time} passed`);
+
+    let type = 'Real32';
+
+    if (args.length - Object.keys(options).length > 1) {
+      type = interpretate(args[1]);
+    }
+
+    type = imageTypes[type];
+
+    let imageData;
+
+    //if not typed array
+    if (Array.isArray(data)) {
+      data = {buffer: data.flat(Infinity), depth: checkDepth(data)};
+    }
+
+    imageData = type.convert(data);
+    benchmark.push(`${performance.now() - time} passed`);
+
+   
+    env.local.type = type;
+
+    console.warn('ImageSize');
+    console.warn(data.depth);
+    const height = data.depth[0];
+    const width  = data.depth[1];
+
+    env.local.dims = data.depth;
+
+    console.log({imageData, width, height});
+
+    imageData = new ImageData(new Uint8ClampedArray(imageData), width, height);
+    benchmark.push(`${performance.now() - time} passed`);
 
     let ImageSize = options.ImageSize;
-
     if (options.Magnification) {
       //options.Magnification = await interpretate(options.Magnification, env);
       ImageSize = Math.floor(width * options.Magnification);
@@ -3695,16 +4055,16 @@ import { enabled } from 'ansi-colors';
     if (Array.isArray(ImageSize)) ImageSize = ImageSize[0];
 
     const target_width = Math.floor(ImageSize);
-    const target_height = Math.floor((height / width) * (ImageSize));
+    const target_height = Math.floor((height / width) * (ImageSize));    
 
-    const scalingFactor =  width / target_width;
+    console.warn('ImageSize');
+    console.warn({target_width, target_height});
 
-    console.log(scalingFactor);
+    env.local.targetDims = [target_height, target_width];
 
 
-    const rgb = data[0][0].length;
     let ctx;
-
+    const dpi = window.devicePixelRatio;
 
     if (env.inset) {
       const foreignObject = env.inset.append('foreignObject')
@@ -3716,196 +4076,60 @@ import { enabled } from 'ansi-colors';
 
       ctx = canvas.node().getContext('2d');
     } else {
-      const canvas = document.createElement("canvas");
+      var canvas = document.createElement("canvas");
       canvas.width = target_width;
       canvas.height = target_height;      
       env.element.appendChild(canvas);
+      canvas.style.width = target_width / dpi + 'px';
+      canvas.style.height = target_height / dpi + 'px';
       ctx  = canvas.getContext("2d");
     }
-    
-    
-    // Get a pointer to the current location in the image.
 
     env.local.ctx = ctx;
-    env.local.length = width*height*4;
-    env.local.width = width;
-    env.local.height = height;
-    env.local.target_width = target_width;
-    env.local.target_height = target_height;
-    env.local.scalingFactor = scalingFactor;
-    env.local.rgb = rgb;
+    
+    //canvas.getContext('2d').scale(dpi, dpi);
 
-    // Wrap your array as a Uint8ClampedArray
-    const rgba = new Uint8ClampedArray(target_width*target_height*4);
-  
-    //OH shitty slow Javascript, why...you do not have faster methods
-    //TODO: rewrite using webGL!!!
-    let index = 0;
-    let ix;
-    let jx;
+    benchmark.push(`${performance.now() - time} passed`);
 
-    if (!rgb) {
-      for (let i=0; i<target_height; ++i) {
-        for (let j=0; j<target_width; ++j) {
-          //what am i doing
-          //after years of CUDA and FPGA programming I am writting a loop over an image array
-          //shit
-          ix = Math.floor(i * scalingFactor);
-          jx = Math.floor(j * scalingFactor);
-
-          rgba[index+0] = data[ix][jx]*255;
-          rgba[index+1] = data[ix][jx]*255;
-          rgba[index+2] = data[ix][jx]*255;
-          rgba[index+3] = 255;
-
-          index+=4;
-        }
-      }  
-
-      ctx.putImageData(new ImageData(rgba, width, height),0,0);
-      return;
+    if (target_width != width || target_height != height) {
+      env.local.resized = true;
+      console.warn('Resizing might be slow');
+      imageData = await createImageBitmap(imageData);
+      ctx.drawImage(imageData, 0,0, target_width, target_height);
+    } else {
+      ctx.putImageData(imageData,0,0);
     }
 
-    if (rgb === 3) {
-      for (let i=0; i<target_height; ++i) {
-        for (let j=0; j<target_width; ++j) {
-        
-          //what am i doing
-          //after years of CUDA and FPGA programming I am writting a loop over an image array
-          //shit
-          ix = Math.floor(i * scalingFactor);
-          jx = Math.floor(j * scalingFactor);          
+    
+    
+    benchmark.push(`${performance.now() - time} passed`);
 
-          rgba[index+0] = data[ix][jx][0];
-          rgba[index+1] = data[ix][jx][1];
-          rgba[index+2] = data[ix][jx][2];
-          rgba[index+3] = 255;
-
-          index+=4;
-        }
-      }
-    }
-
-    if (rgb === 4) {
-      for (let i=0; i<target_height; ++i) {
-        for (let j=0; j<target_width; ++j) {
-        
-          //what am i doing
-          //after years of CUDA and FPGA programming I am writting a loop over an image array
-          //shit
-          ix = Math.floor(i * scalingFactor);
-          jx = Math.floor(j * scalingFactor);
-
-          rgba[index+0] = data[ix][jx][0];
-          rgba[index+1] = data[ix][jx][1];
-          rgba[index+2] = data[ix][jx][2];
-          rgba[index+3] = 255; // ignore alpha
-
-          index+=4;
-        }
-      }
-    }    
-
-
-    // Repost the data.
-    ctx.putImageData(new ImageData(rgba, target_width, target_height),0,0);
-    console.warn(`${performance.now() - time} passed`);
+    console.warn(benchmark);
 }
 
 g2d.Image.update = async (args, env) => {
+  let data = await interpretate(args[0], {...env, context: [numericAccelerator, g2d]});
+    //if not typed array
+    if (Array.isArray(data)) {
+      console.warn('Image:update: not a typed array. It will be slow...');
+      data = {buffer: data.flat(Infinity), depth: checkDepth(data)};
+    }    
+
+    let imageData = env.local.type.convert(data);
+    imageData = new ImageData(new Uint8ClampedArray(imageData), env.local.dims[1], env.local.dims[0]);
     
-
-    const data = await interpretate(args[0], {...env, nfast:true, numeric:true, image:true});
-    const height = data.length;
-    const width = data[0].length;
-    const rgb = data[0][0].length;
-
-    const ctx = env.local.ctx;
-
-    const target_width = env.local.target_width;
-    const target_height = env.local.target_height;
-
-    const scalingFactor = env.local.scalingFactor
-
-    // Wrap your array as a Uint8ClampedArray
-    const rgba = new Uint8ClampedArray(target_width*target_height*4);
-  
-    //OH shitty slow Javascript, why...you do not have faster methods
-    //TODO: rewrite using webGL!!!
-    let index = 0;
-    let ix, jx;
-
-    if (!rgb) {
-      for (let i=0; i<target_height; ++i) {
-        for (let j=0; j<target_width; ++j) {
-          //what am i doing
-          //after years of CUDA and FPGA programming I am writting a loop over an image array
-          //shit
-          ix = Math.floor(i * scalingFactor);
-          jx = Math.floor(j * scalingFactor); 
-
-
-          rgba[index+0] = data[ix][jx]*255;
-          rgba[index+1] = data[ix][jx]*255;
-          rgba[index+2] = data[ix][jx]*255;
-          rgba[index+3] = 255;
-
-          index+=4;
-        }
-      }  
-
-      ctx.putImageData(new ImageData(rgba, target_width, target_height),0,0);
-      return;
+    if (env.local.resized) {
+      imageData = await createImageBitmap(imageData);
+      env.local.ctx.drawImage(imageData, 0,0, env.local.targetDims[1], env.local.targetDims[0]);
+    } else {
+      env.local.ctx.putImageData(imageData,0,0);
     }
-
   
-    if (rgb === 3) {
-      for (let i=0; i<target_height; ++i) {
-        for (let j=0; j<target_width; ++j) {
-        
-          //what am i doing
-          //after years of CUDA and FPGA programming I am writting a loop over an image array
-          //shit
-          ix = Math.floor(i * scalingFactor);
-          jx = Math.floor(j * scalingFactor); 
-
-          rgba[index+0] = data[ix][jx][0];
-          rgba[index+1] = data[ix][jx][1];
-          rgba[index+2] = data[ix][jx][2];
-          rgba[index+3] = 255;
-
-          index+=4;
-        }
-      }
-    }
-
-    if (rgb === 4) {
-      for (let i=0; i<target_height; ++i) {
-        for (let j=0; j<target_width; ++j) {
-
-          ix = Math.floor(i * scalingFactor);
-          jx = Math.floor(j * scalingFactor);         
-          //what am i doing
-          //after years of CUDA and FPGA programming I am writting a loop over an image array
-          //shit
-
-          rgba[index+0] = data[ix][jx][0];
-          rgba[index+1] = data[ix][jx][1];
-          rgba[index+2] = data[ix][jx][2];
-          rgba[index+3] = 255; // ignore alpha
-          
-          index+=4;
-        }
-      }
-    }  
-
-
-    // Repost the data.
-    ctx.putImageData(new ImageData(rgba, target_width, target_height),0,0);
-    
+  
 }
 
 g2d.Image.destroy = (args, env) => {
+  
 }
 
 
