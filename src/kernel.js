@@ -781,6 +781,7 @@
               .attr("text-anchor", "middle") 
               .attr('fill', labelStyle.color)
               .style("font-size", labelStyle.fontsize)  
+              .style("font-family", labelStyle.fontfamily)  
               .text(label);
     }
 
@@ -3890,7 +3891,13 @@ import { enabled } from 'ansi-colors';
       constructor: Uint8Array,
       convert: (array) => {
         if (array.depth.length === 3) {
-          if (array.depth[2] === 4) return array.buffer;
+          if (array.depth[2] === 4) {
+            //console.error(array);
+            const rgba = new Uint8ClampedArray(array.buffer);
+            //moveRGB(array.buffer, rgba, size);
+            return rgba;
+            //return array.buffer;
+          }
           if (array.depth[2] === 3) {
             const size = array.depth[0] * array.depth[1];
             const rgba = new Uint8ClampedArray(size << 2);
@@ -3991,6 +3998,7 @@ import { enabled } from 'ansi-colors';
 
     const time = performance.now();
     const benchmark = [];
+    console.log(args);
 
     let data = await interpretate(args[0], {...env, context: [numericAccelerator, g2d]});
 
@@ -4056,6 +4064,7 @@ import { enabled } from 'ansi-colors';
 
 
     let ctx;
+    const dpi = window.devicePixelRatio;
 
     if (env.inset) {
       const foreignObject = env.inset.append('foreignObject')
@@ -4067,17 +4076,32 @@ import { enabled } from 'ansi-colors';
 
       ctx = canvas.node().getContext('2d');
     } else {
-      const canvas = document.createElement("canvas");
+      var canvas = document.createElement("canvas");
       canvas.width = target_width;
       canvas.height = target_height;      
       env.element.appendChild(canvas);
+      canvas.style.width = target_width / dpi + 'px';
+      canvas.style.height = target_height / dpi + 'px';
       ctx  = canvas.getContext("2d");
     }
 
     env.local.ctx = ctx;
+    
+    //canvas.getContext('2d').scale(dpi, dpi);
 
     benchmark.push(`${performance.now() - time} passed`);
-    ctx.putImageData(imageData,0,0,0,0, target_width, target_height);
+
+    if (target_width != width || target_height != height) {
+      env.local.resized = true;
+      console.warn('Resizing might be slow');
+      imageData = await createImageBitmap(imageData);
+      ctx.drawImage(imageData, 0,0, target_width, target_height);
+    } else {
+      ctx.putImageData(imageData,0,0);
+    }
+
+    
+    
     benchmark.push(`${performance.now() - time} passed`);
 
     console.warn(benchmark);
@@ -4093,8 +4117,14 @@ g2d.Image.update = async (args, env) => {
 
     let imageData = env.local.type.convert(data);
     imageData = new ImageData(new Uint8ClampedArray(imageData), env.local.dims[1], env.local.dims[0]);
-
-    env.local.ctx.putImageData(imageData,0,0,0,0, env.local.targetDims[1], env.local.targetDims[0]);
+    
+    if (env.local.resized) {
+      imageData = await createImageBitmap(imageData);
+      env.local.ctx.drawImage(imageData, 0,0, env.local.targetDims[1], env.local.targetDims[0]);
+    } else {
+      env.local.ctx.putImageData(imageData,0,0);
+    }
+  
   
 }
 
