@@ -16,6 +16,9 @@ AnimationFrameListener::usage = "AnimationFrameListener[symbol // Offload, \"Eve
 Graphics`Canvas;
 Graphics`Canvas::usage = "Graphics`Canvas[] represents an SVG canvas of the current context in Graphics"
 
+(*Unprotect[Image]
+Options[Image] = Append[Options[Image], Antialiasing->True];*)
+
 Begin["`Private`"]
 
 listener[p_, list_] := With[{uid = CreateUUID[]}, With[{

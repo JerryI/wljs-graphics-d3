@@ -6695,6 +6695,8 @@ function arrDepth(arr) {
     }
   };
 
+  g2d.Antialiasing = () => 'Antialiasing';
+
   g2d.Image = async (args, env) => {
     const options = await core._getRules(args, {...env, context: g2d});
 
@@ -6788,6 +6790,10 @@ function arrDepth(arr) {
     }
 
     env.local.ctx = ctx;
+
+    if('Antialiasing' in options) {
+      ctx.imageSmoothingEnabled = options.Antialiasing;
+    }
     
     //canvas.getContext('2d').scale(dpi, dpi);
 
@@ -6822,6 +6828,7 @@ g2d.Image.update = async (args, env) => {
     
     if (env.local.resized) {
       imageData = await createImageBitmap(imageData);
+      env.local.ctx.clearRect(0, 0, env.local.targetDims[1], env.local.targetDims[0]);
       env.local.ctx.drawImage(imageData, 0,0, env.local.targetDims[1], env.local.targetDims[0]);
     } else {
       env.local.ctx.putImageData(imageData,0,0);
