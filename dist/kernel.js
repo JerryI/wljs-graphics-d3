@@ -4234,9 +4234,12 @@ function arrDepth(arr) {
     return object;
   };
 
-  g2d.Text.PutText = (object, text, env) => {
+  g2d.Text.PutText = (object, raw, env) => {
     //parse the text
-    if (!text) return;
+    if (!raw) return;
+    let text = raw;
+    if (typeof raw === 'number') text = raw.toString();
+
     const tokens = [g2d.Text.TokensSplit(text.replaceAll(/\\([a-zA-z]+)/g, g2d.Text.GreekReplacer), g2d.Text.TextOperators)].flat(Infinity);
     console.log(tokens);
 
@@ -4377,7 +4380,7 @@ function arrDepth(arr) {
   g2d.FontFamily.update = g2d.FontFamily;
   
   g2d.Style = async (args, env) => {
-    const copy = {...env};
+    const copy = env;
     const options = await core._getRules(args, env);
     
     if (options.FontSize) {
