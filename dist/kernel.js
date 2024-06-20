@@ -2820,6 +2820,8 @@ function arrDepth(arr) {
   
   });
 
+  core.GoldenRatio = () => 1.6180;
+
   g2d["Graphics`Canvas"] = async (args, env) => {
     //const copy = {...env};
     //modify local axes to transform correctly the coordinates of scaled container
@@ -2972,11 +2974,11 @@ function arrDepth(arr) {
           ImageSize = [env.imageSize, env.imageSize*0.618034];
         }
       } else {
-        ImageSize = [core.DefaultWidth, 0.618034*core.DefaultWidth];
+        ImageSize = core.DefaultWidth;
       }
     }
 
-    const aspectratio = await interpretate(options.AspectRatio, env) || 0.618034;
+    const aspectratio = await interpretate(options.AspectRatio, env) || 1;
 
     //if only the width is specified
     if (!(ImageSize instanceof Array)) ImageSize = [ImageSize, ImageSize*aspectratio];
@@ -5214,18 +5216,24 @@ function arrDepth(arr) {
 
     if (args.length > 1) {
       radius = await interpretate(args[1], env);
-      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
-    }
+      if (!Array.isArray(radius)) radius = [radius, radius];
+    }   
 
     const x = env.xAxis;
     const y = env.yAxis;
 
+    env.local.coords = [x(data[0]), y(data[1])];
+    env.local.r = [x(radius[0]) - x(0), Math.abs(y(radius[1]) - y(0))];
+
+
+
     const object = env.svg
-    .append("circle")
+    .append("ellipse")
     .attr("vector-effect", "non-scaling-stroke")
       .attr("cx", x(data[0]) )
       .attr("cy", y(data[1]) )
-      .attr("r", x(radius) - x(0))
+      .attr("rx", env.local.r[0])
+      .attr("ry", env.local.r[1])
       .style("stroke", env.color)
       .style("fill", 'none')
       .style("opacity", env.opacity);
@@ -5255,15 +5263,22 @@ function arrDepth(arr) {
 
     if (args.length > 1) {
       radius = await interpretate(args[1], env);
-      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
-    }
+      if (!Array.isArray(radius)) radius = [radius, radius];
+    }   
 
     const x = env.xAxis;
-    const y = env.yAxis;    
+    const y = env.yAxis; 
 
-    env.local.object.maybeTransition(env.transitionType, env.transitionDuration).attr("cx", x(data[0]) )
+    //env.local.coords = [x(data[0]), y(data[1])];
+    env.local.r = [x(radius[0]) - x(0), Math.abs(y(radius[1]) - y(0))];
+
+   
+
+    env.local.object.maybeTransition(env.transitionType, env.transitionDuration)
+    .attr("cx", x(data[0]) )
     .attr("cy", y(data[1]) )
-    .attr("r", x(radius) - x(0));
+    .attr("rx", env.local.r[0])
+    .attr("ry", env.local.r[1]);
 
     return env.local.object;
   };
@@ -5280,35 +5295,153 @@ function arrDepth(arr) {
 
   g2d.Circle.virtual = true;
 
+  const deg = function(rad) { return rad * 180 / Math.PI };
+  const rad = function (deg) { return deg * Math.PI / 180 };
+
+  function getEllipsePointForAngle(cx, cy, rx, ry, phi, theta) {
+    const { abs, sin, cos } = Math;
+    
+    const M = abs(rx) * cos(theta),
+          N = abs(ry) * sin(theta);  
+    
+    return [
+      cx + cos(phi) * M - sin(phi) * N,
+      cy + sin(phi) * M + cos(phi) * N
+    ];
+  }
+
+  function getEndpointParameters(cx, cy, rx, ry, phi, theta, dTheta) {
+  
+    const [x1, y1] = getEllipsePointForAngle(cx, cy, rx, ry, phi, theta);
+    const [x2, y2] = getEllipsePointForAngle(cx, cy, rx, ry, phi, theta + dTheta);
+    
+    const fa = Math.abs(dTheta) > Math.PI ? 1 : 0;
+    const fs = dTheta > 0 ? 1 : 0;
+    
+    return { x1, y1, x2, y2, fa, fs }
+  }  
+  
+  function getCenterParameters(x1, y1, x2, y2, fa, fs, rx, ry, phi) {
+    const { abs, sin, cos, sqrt } = Math;
+    const pow = n => Math.pow(n, 2);
+  
+    const sinphi = sin(phi), cosphi = cos(phi);
+  
+    // Step 1: simplify through translation/rotation
+    const x =  cosphi * (x1 - x2) / 2 + sinphi * (y1 - y2) / 2,
+          y = -sinphi * (x1 - x2) / 2 + cosphi * (y1 - y2) / 2;
+  
+    const px = pow(x), py = pow(y), prx = pow(rx), pry = pow(ry);
+    
+    // correct of out-of-range radii
+    const L = px / prx + py / pry;
+  
+    if (L > 1) {
+      rx = sqrt(L) * abs(rx);
+      ry = sqrt(L) * abs(ry);
+    } else {
+      rx = abs(rx);
+      ry = abs(ry);
+    }
+
+    // Step 2 + 3: compute center
+    const sign = fa === fs ? -1 : 1;
+    const M = sqrt((prx * pry - prx * py - pry * px) / (prx * py + pry * px)) * sign;
+
+    const _cx = M * (rx * y) / ry,
+          _cy = M * (-ry * x) / rx;
+
+    const cx = cosphi * _cx - sinphi * _cy + (x1 + x2) / 2,
+          cy = sinphi * _cx + cosphi * _cy + (y1 + y2) / 2;
+
+    // Step 4: compute θ and dθ
+    const theta = vectorAngle(
+      [1, 0],
+      [(x - _cx) / rx, (y - _cy) / ry]
+    );
+
+    let _dTheta = deg(vectorAngle(
+        [(x - _cx) / rx, (y - _cy) / ry],
+        [(-x - _cx) / rx, (-y - _cy) / ry]
+    )) % 360;
+
+    if (fs === 0 && _dTheta > 0) _dTheta -= 360;
+    if (fs === 1 && _dTheta < 0) _dTheta += 360;
+  
+    return { cx, cy, theta, dTheta: rad(_dTheta) };
+}
+
+function vectorAngle ([ux, uy], [vx, vy]) {
+  const { acos, sqrt } = Math;
+  const sign = ux * vy - uy * vx < 0 ? -1 : 1,
+        ua = sqrt(ux * ux + uy * uy),
+        va = sqrt(vx * vx + vy * vy),
+        dot = ux * vx + uy * vy;
+
+  return sign * acos(dot / (ua * va));
+}
+
+
+
   g2d._arc = async (args, env) => {
     let data = await interpretate(args[0], env);
     let radius = await interpretate(args[1], env);
-      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+      if (!Array.isArray(radius)) radius = [radius, radius];
     
-    let angles = await interpretate(args[2], env);
+    let angles = (await interpretate(args[2], env)).map((a) => 2*Math.PI - a);
 
     const x = env.xAxis;
     const y = env.yAxis;
 
-    env.local.coords = [x(data[0]), y(data[1])];
-    env.local.r = x(radius) - x(0);
+    //env.local.coords = [x(data[0]), y(data[1])];
+    //env.local.r = [x(radius[0]) - x(0), Math.abs(y(radius[1]) - y(0))];
+    const ellipse = {
+      cx: x(data[0]),
+      cy: y(data[1]),
 
-    const arc = d3.arc() 
-      .outerRadius(0) 
-      .innerRadius(env.local.r) 
-      .startAngle(angles[0]).endAngle(angles[1]); 
-    
-    env.local.arc = arc;
+      phi: 0,
+      rx: x(radius[0]) - x(0),
+      ry: Math.abs(y(radius[1]) - y(0)),
+      start: angles[0],
+      delta: angles[1]-angles[0]
+    };
 
-    console.log({x: x(data[0]), xorg: data[0], r: env.local.r, rorg: radius});
+    console.error(angles);
+
+
+    const { x1, y1, x2, y2, fa, fs } = getEndpointParameters(
+      ellipse.cx,
+      ellipse.cy,
+      ellipse.rx,
+      ellipse.ry,
+      ellipse.phi,
+      ellipse.start,
+      ellipse.delta
+    );
+
+    const { cx, cy, theta, dTheta } = getCenterParameters(
+      x1,
+      y1,
+      x2,
+      y2,
+      fa,
+      fs,
+      ellipse.rx,
+      ellipse.ry,
+      ellipse.phi
+    );  
+
+   // console.log({x: x(data[0]), xorg: data[0], r: env.local.r, rorg: radius});
 
     const object = env.svg.append("path") 
       .attr("vector-effect", "non-scaling-stroke")
-      .attr("transform", `translate(${x(data[0])},${y(data[1])})`)
-      .style("stroke", 'none')
       .style("fill", env.color)
       .style("opacity", env.opacity) 
-      .attr("d", arc);  
+      .attr("d",
+        `M ${cx} ${cy}
+         L ${x1} ${y1}
+         A ${ellipse.rx} ${ellipse.ry} ${deg(ellipse.phi)} ${fa} ${fs} ${x2} ${y2}
+         Z`); 
       
     return object;
   };
@@ -5378,11 +5511,11 @@ function arrDepth(arr) {
     }
 
     let data = await interpretate(args[0], env);
-    let radius = 1; 
+    let radius = [1, 1]; 
 
     if (args.length > 1) {
       radius = await interpretate(args[1], env);
-      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+      if (!Array.isArray(radius)) radius = [radius, radius];
     }
 
     //console.warn(args);
@@ -5391,14 +5524,15 @@ function arrDepth(arr) {
     const y = env.yAxis;
 
     env.local.coords = [x(data[0]), y(data[1])];
-    env.local.r = x(radius) - x(0);
-
+    env.local.r = [x(radius[0]) - x(0), Math.abs(y(radius[1]) - y(0))];
+    //throw env.local.r;
     const object = env.svg
-    .append("circle")
+    .append("ellipse")
     .attr("vector-effect", "non-scaling-stroke")
       .attr("cx",  x(data[0]))
       .attr("cy", y(data[1]) )
-      .attr("r", env.local.r)
+      .attr("rx", env.local.r[0])
+      .attr("ry", env.local.r[1])
       .style("stroke", 'none')
       .style("fill", env.color)
       .style("opacity", env.opacity);
@@ -5417,18 +5551,18 @@ function arrDepth(arr) {
 
   g2d.Disk.update = async (args, env) => {
     let data = await interpretate(args[0], env);
-    let radius = 1; 
+    let radius = env.local.r; 
 
     if (args.length > 1) {
       radius = await interpretate(args[1], env);
-      if (Array.isArray(radius)) radius = (radius[0] + radius[1])/2.0;
+      if (!Array.isArray(radius)) radius = [radius, radius];
     }
 
     const x = env.xAxis;
     const y = env.yAxis;     
 
     env.local.coords = [x(data[0]), y(data[1])];
-    env.local.r = x(radius) - x(0);
+    env.local.r = [x(radius[0]) - x(0), Math.abs(y(radius[1]) - y(0))];
 
     //console.warn(args);
 
@@ -5437,7 +5571,8 @@ function arrDepth(arr) {
     env.local.object.maybeTransition(env.transitionType, env.transitionDuration)
     .attr("cx",  env.local.coords[0])
     .attr("cy", env.local.coords[1])
-    .attr("r", env.local.r);
+    .attr("rx", env.local.r[0])
+    .attr("ry", env.local.r[1]);
   };
 
   g2d.Disk.updateColor = (args, env) => {
