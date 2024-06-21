@@ -171,7 +171,18 @@
 
 
     if (Object.keys(options).length == 0 && args.length > 1) {
-      options = await core._getRules(await interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
+      if (args[1][0] === 'List') {
+        const opts = args[1].slice(1);
+        if (opts[0][0] === 'List') {
+          //console.warn(opts[0][1]);
+          options = await core._getRules(opts[0].slice(1), {...env, context: g2d, hold:true});
+        } else {
+          options = await core._getRules(opts, {...env, context: g2d, hold:true});
+        }
+      } else {
+        options = await core._getRules(await interpretate(args[1], {...env, context: g2d, hold:true}), {...env, context: g2d, hold:true});
+      }
+      
  
     }
 
@@ -201,13 +212,9 @@
       }
     }
 
-    const aspectratio = await interpretate(options.AspectRatio, env) || 1;
 
-    //if only the width is specified
-    if (!(ImageSize instanceof Array)) ImageSize = [ImageSize, ImageSize*aspectratio];
 
-    console.log('Image size');
-    console.log(ImageSize); 
+
 
     //simplified version
     let axis = [false, false];
@@ -388,6 +395,18 @@
       }
     }
     
+
+
+    let aspectratio = await interpretate(options.AspectRatio, env) || 1;
+
+    
+
+    //if only the width is specified
+    if (!(ImageSize instanceof Array)) {
+      aspectratio = (aspectratio * (ImageSize - margin.left - margin.right) + margin.top + margin.bottom)/(ImageSize);
+      ImageSize = [ImageSize, ImageSize*aspectratio];
+    }
+
     let width = ImageSize[0] - margin.left - margin.right;
     let height = ImageSize[1] - margin.top - margin.bottom;
 
