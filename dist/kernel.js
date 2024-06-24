@@ -6199,8 +6199,10 @@ function vectorAngle ([ux, uy], [vx, vy]) {
   
   g2d.Rotate = async (args, env) => {
     const degrees = await interpretate(args[1], env);
+    let aligment;
     if (args.length > 2) {
-      await interpretate(args[2], env);
+      aligment = await interpretate(args[2], env);
+      env.local.aligment = aligment;
     }
 
     const group = env.svg.append("g");
@@ -6209,10 +6211,19 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
     await interpretate(args[0], {...env, svg: group});
 
-    const centre = group.node().getBBox();
+    let centre = group.node().getBBox();
+    
+    if (aligment) {
+      centre.x = (env.xAxis(aligment[0]));
+      centre.y = (env.yAxis(aligment[1]));
+    } else {
+      centre.x = (centre.x + centre.width / 2);
+      centre.y = (centre.y + centre.height / 2);
+    }
+
 
     const rotation = "rotate(" + (degrees / Math.PI * 180.0) + ", " + 
-    (centre.x + centre.width / 2) + ", " + (centre.y + centre.height / 2) + ")";
+    centre.x + ", " + centre.y + ")";
 
     group.attr("transform", rotation);
 
@@ -6222,10 +6233,23 @@ function vectorAngle ([ux, uy], [vx, vy]) {
   g2d.Rotate.update = async (args, env) => {
     const degrees = await interpretate(args[1], env);
 
-    const centre = env.local.group.node().getBBox();
+    let centre;
+    centre = env.local.group.node().getBBox();
+    
+    if (env.local.aligment) {
+      centre.x = (env.xAxis(env.local.aligment[0]));
+      centre.y = (env.yAxis(env.local.aligment[1]));
+      //console.log({x: env.xAxis(env.local.aligment[0]) - env.xAxis(0), y:env.yAxis(env.local.aligment[1]) - env.yAxis(0),
 
+        //x0: centre.width / 2, y0: centre.height / 2
+      //});
+    } else {
+      centre.x = (centre.x + centre.width / 2);
+      centre.y = (centre.y + centre.height / 2);
+    }
+       
     const rotation = "rotate(" + (degrees / Math.PI * 180.0) + ", " + 
-    (centre.x + centre.width / 2) + ", " + (centre.y + centre.height / 2) + ")";
+    (centre.x ) + ", " + (centre.y ) + ")";
 
     var interpol_rotate = d3.interpolateString(env.local.rotation, rotation);
 
