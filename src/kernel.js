@@ -598,8 +598,8 @@
                 x = d3.scaleTime()
                 .domain(range[0].map(e => e*1000 - 2208996000*1000))
                 .range([ 0, width ]);
-                txAxis = d3.axisTop(x);
-                xAxis = d3.axisBottom(x);
+                txAxis = d3.axisTop(x).ticks(4);
+                xAxis = d3.axisBottom(x).ticks(4);
                 const temp = x;
                 x = (d) => temp(d*1000 - 2208996000*1000);
                 x.copy = temp.copy 
