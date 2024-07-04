@@ -4569,8 +4569,8 @@ function arrDepth(arr) {
     env.strokeWidth = interpretate(args[0], env);
   };
 
-  g2d.PointSize = (args, env) => {
-    env.pointSize = interpretate(args[0], env);
+  g2d.PointSize = async (args, env) => {
+    env.pointSize = await interpretate(args[0], env);
   };
 
   g2d.Annotation = core.List;
@@ -7009,13 +7009,16 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
     if (env.inset) {
       const foreignObject = env.inset.append('foreignObject')
-      .attr('width', target_width)
-      .attr('height', target_height);
+      .attr('width', target_width / dpi)
+      .attr('height', target_width / dpi);
     
       const canvas = foreignObject.append('xhtml:canvas')
-      .attr('xmlns', 'http://www.w3.org/1999/xhtml');
+      .attr('xmlns', 'http://www.w3.org/1999/xhtml').node();
 
-      ctx = canvas.node().getContext('2d');
+      canvas.style.width = target_width / dpi + 'px';
+      canvas.style.height = target_height / dpi + 'px';
+
+      ctx = canvas.getContext('2d');
     } else {
       var canvas = document.createElement("canvas");
       canvas.width = target_width;
