@@ -5287,26 +5287,27 @@ function arrDepth(arr) {
   };
 
   g2d.Circle = async (args, env) => {
+
     let data = await interpretate(args[0], env);
-    let radius = 1; 
+    let radius = [1, 1]; 
 
     if (args.length > 1) {
       radius = await interpretate(args[1], env);
       if (!Array.isArray(radius)) radius = [radius, radius];
-    }   
+    }
+
+    //console.warn(args);
 
     const x = env.xAxis;
     const y = env.yAxis;
 
     env.local.coords = [x(data[0]), y(data[1])];
     env.local.r = [x(radius[0]) - x(0), Math.abs(y(radius[1]) - y(0))];
-
-
-
+    //throw env.local.r;
     const object = env.svg
     .append("ellipse")
     .attr("vector-effect", "non-scaling-stroke")
-      .attr("cx", x(data[0]) )
+      .attr("cx",  x(data[0]))
       .attr("cy", y(data[1]) )
       .attr("rx", env.local.r[0])
       .attr("ry", env.local.r[1])
@@ -5315,6 +5316,7 @@ function arrDepth(arr) {
       .style("opacity", env.opacity);
 
     env.local.object = object;
+
     if (env.colorRefs) {
       env.colorRefs[env.root.uid] = env.root;
     }
