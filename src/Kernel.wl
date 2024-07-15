@@ -12,6 +12,13 @@ EventListener::usage = "Internal wrapper for Graphics object to catch events"
 
 AnimationFrameListener::usage = "AnimationFrameListener[symbol // Offload, \"Event\" -> _String] binds to a symbol instance and requests an animation frame once symbol was changed"
 
+
+Graphics`Canvas;
+Graphics`Canvas::usage = "Graphics`Canvas[] represents an SVG canvas of the current context in Graphics"
+
+(*Unprotect[Image]
+Options[Image] = Append[Options[Image], Antialiasing->True];*)
+
 Begin["`Private`"]
 
 listener[p_, list_] := With[{uid = CreateUUID[]}, With[{
@@ -26,7 +33,9 @@ Unprotect[Point, Rectangle, Text, Disk];
 Point      /: EventHandler[p_Point, list_List] := listener[p, list]
 Rectangle  /: EventHandler[p_Rectangle, list_List] := listener[p, list]
 Text       /: EventHandler[p_Text, list_List] := listener[p, list]
-Disk  /: EventHandler[p_Disk, list_List] := listener[p, list]
+Disk       /: EventHandler[p_Disk, list_List] := listener[p, list]
+
+Graphics`Canvas  /: EventHandler[p_Graphics`Canvas, list_List] := listener[p, list]
 
 Protect[Point, Rectangle, Text, Disk];
 
