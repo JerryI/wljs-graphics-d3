@@ -14,7 +14,9 @@
     "styles": "src/styles.css",
     "kernel": "src/Kernel.wl",
     "category": "Plotting & Graphics",
-    "priority": 10
+    "priority": 10,
+    "figureExportRequired": true,
+    "cellExportRequired": true
   },
   "repository": {
     "type": "git",
