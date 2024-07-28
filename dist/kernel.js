@@ -3818,6 +3818,27 @@ function arrDepth(arr) {
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
   g2d.Graphics.destroy = (args, env) => { console.error('Nothing to destroy...'); };
 
+  g2d.JoinForm = (args, env) => {
+    env.joinform = interpretate(args[0], env);
+    console.warn('JoinForm is not implemented!');
+  };
+
+  g2d.JoinedCurve = async (args, env) => {
+    await interpretate(args[0], env);
+    console.warn('JoinedCurve is not implemented!');
+  };  
+
+  g2d.FilledCurve = async (args, env) => {
+    const group = env.svg.append('g');
+    
+    const color = env.color;
+    group.attr('fill', color);
+    const objects = await interpretate(args[0], {...env, svg: group});
+
+
+    return objects;
+  };
+
   g2d.Inset = async (args, env) => {
     let pos = [0,0];
     let size; 
@@ -5078,9 +5099,17 @@ function arrDepth(arr) {
     points = points.map((p) => [x(p[0]), y(p[1])]);
 
     path.moveTo(...points[0]);
+    let indexLeft = points.length - 1;
     for (let i=1; i<points.length - 2; i+=3) {
+        indexLeft -= 3;
         path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]); 
     }
+
+    if (indexLeft > 0) {
+      path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
+    }
+
+    if (env.returnPath) return path;
 
     return env.svg.append("path")
         .attr("fill", "none")
@@ -5125,19 +5154,23 @@ function arrDepth(arr) {
 
       break;        
       case 2:
-       
-        object = env.svg.append("path")
-        .datum(data)
-        .attr("class", 'line-'+uid)
-        .attr("vector-effect", "non-scaling-stroke")
-        .attr("fill", "none")
-        .attr('opacity', env.opacity)
-        .attr("stroke", env.color)
-        .attr("stroke-width", env.strokeWidth)
-        .attr("d", d3.line()
-          .x(function(d) { return x(d[0]) })
-          .y(function(d) { return y(d[1]) })
-          );    
+        if (env.returnPath) {
+          object = null;
+          throw 'Not implemented!';
+        } else {
+          object = env.svg.append("path")
+          .datum(data)
+          .attr("class", 'line-'+uid)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("fill", "none")
+          .attr('opacity', env.opacity)
+          .attr("stroke", env.color)
+          .attr("stroke-width", env.strokeWidth)
+          .attr("d", d3.line()
+            .x(function(d) { return x(d[0]) })
+            .y(function(d) { return y(d[1]) })
+            );   
+        } 
       break;
     
       case 3:
