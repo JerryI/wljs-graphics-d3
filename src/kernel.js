@@ -983,7 +983,7 @@
 
       await interpretate(options.Prolog, env); 
       await interpretate(args[0], env);
-      await interpretate(options.Epilog, env);
+      interpretate(options.Epilog, env);
 
       if (unknownRanges) {
         if (env.reRendered) {
@@ -2066,8 +2066,10 @@ import { enabled } from 'ansi-colors';
   let hsv2hsl = (h,s,v,l=v-v*s/2, m=Math.min(l,1-l)) => [h,m?(v-l)/m:0,l];
 
   g2d.Hue = async (args, env) => {
-    if (args.length == 3) {
       let color = await Promise.all(args.map(el => interpretate(el, env)));
+      if (color.length < 3) {
+        color = [color[0], 1,1];
+      }
       color = hsv2hsl(...color);
       color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
@@ -2083,13 +2085,15 @@ import { enabled } from 'ansi-colors';
   
       env.exposed.color = env.color;
 
-    } else {
-      console.error('g2d: Hue must have three arguments!');
-    }
   } 
 
   g2d.Hue.update = async (args, env) => {
     let color = await Promise.all(args.map(el => interpretate(el, env)));
+
+    if (color.length < 3) {
+      color = [color[0], 1,1];
+    }
+
     color = hsv2hsl(...color);
     color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
