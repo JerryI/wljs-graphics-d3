@@ -3823,20 +3823,90 @@ function arrDepth(arr) {
     console.warn('JoinForm is not implemented!');
   };
 
+  const curve = {};
+  curve.BezierCurve = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = env.path; 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    let indexLeft = points.length - 1;
+
+    if (env.startQ) {
+      path.moveTo(...points[0]);
+    
+      for (let i=1; i<points.length - 2; i+=3) {
+          indexLeft -= 3;
+          path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]); 
+      }
+
+      env.startQ = false;
+    } else {
+      //path.moveTo(...points[0]);
+    
+      for (let i=0; i<points.length - 2; i+=3) {
+          indexLeft -= 3;
+          path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]); 
+      }     
+    }
+
+
+    if (indexLeft > 0) {
+      path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
+    }    
+  }; 
+
+  curve.Line = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = env.path; 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    if (env.startQ) {
+      path.moveTo(...points[0]);
+      for (let i =1; i<points.length; ++i)
+        path.lineTo(...points[i]);      
+
+      env.startQ = false;
+
+      return;
+    }
+
+    for (let i =0; i<points.length; ++i)
+      path.lineTo(...points[i]);
+
+  };
+
   g2d.JoinedCurve = async (args, env) => {
-    await interpretate(args[0], env);
-    console.warn('JoinedCurve is not implemented!');
+    const path = d3.path();
+    await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
+    
+    return env.svg.append("path")
+    .attr("fill", "none")
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('opacity', env.opacity)
+    .attr("stroke", env.color)
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", path); 
   };  
 
   g2d.FilledCurve = async (args, env) => {
-    const group = env.svg.append('g');
+    const path = d3.path();
+    await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
     
-    const color = env.color;
-    group.attr('fill', color);
-    const objects = await interpretate(args[0], {...env, svg: group});
-
-
-    return objects;
+    return env.svg.append("path")
+    .attr("fill", env.color)
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('opacity', env.opacity)
+    .attr("stroke", 'none')
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", path); 
   };
 
   g2d.Inset = async (args, env) => {
@@ -5109,7 +5179,7 @@ function arrDepth(arr) {
       path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
     }
 
-    if (env.returnPath) return path;
+    //if (env.returnPath) return path;
 
     return env.svg.append("path")
         .attr("fill", "none")
