@@ -1170,6 +1170,7 @@
     .attr("fill", env.color)
     .attr("vector-effect", "non-scaling-stroke")
     .attr('opacity', env.opacity)
+    .attr('fill-rule', 'evenodd')
     .attr("stroke", 'none')
     .attr("stroke-width", env.strokeWidth)
     .attr("d", path); 
