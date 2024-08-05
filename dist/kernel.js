@@ -4659,6 +4659,8 @@ function arrDepth(arr) {
     //await interpretate(args[0], env);
   //}  
 
+  g2d.Thickness = () => {};
+
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
   };
