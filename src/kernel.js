@@ -1162,6 +1162,8 @@
     .attr("d", path); 
   }  
 
+  g2d.CapForm = () => {}
+
   g2d.FilledCurve = async (args, env) => {
     const path = d3.path();
     await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
