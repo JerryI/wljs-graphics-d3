@@ -227,7 +227,7 @@
     let axis = [false, false];
     let invertedTicks = false;
     let ticklengths = [5,5,5,5];
-    let tickLabels = [true, true, true, true];
+    let tickLabels = [true, false, true, false];
     let ticks = undefined;
     let framed = false;
     let axesstyle = undefined;
