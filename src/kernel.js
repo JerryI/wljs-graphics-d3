@@ -449,8 +449,17 @@
       svg.attr("width", width + margin.left + margin.right + padding.left)
          .attr("height", height + margin.top + margin.bottom + padding.bottom);
 
+
       env.svgWidth = width + margin.left + margin.right + padding.left;
       env.svgHeight = height + margin.top + margin.bottom + padding.bottom;
+    }
+
+    let clipOffset = 0;
+    let clipMargin = 2;
+
+    if (framed) {
+      clipOffset = 7;
+      clipMargin = 0;
     }
 
     //make it focusable
@@ -463,7 +472,14 @@
       .attr("transform",
             "translate(" + (margin.left + padding.left) + "," + margin.top + ")");
 
-
+    const clipId = "clp"+(Math.random().toFixed(4).toString().replace('.', ''));
+    var clip = svg.append("clipPath")
+    .attr("id", clipId)
+    .append("rect")
+    .attr("width", width - 2 * clipOffset + clipMargin)
+    .attr("height", height - 2 * clipOffset + clipMargin)
+    .attr("x", clipOffset - clipMargin)
+    .attr("y", clipOffset - clipMargin);
     
     let range = [[-1.15,1.15],[-1.15,1.15]];
     let unknownRanges = true;
@@ -751,6 +767,10 @@
 
     env.context = g2d;
     env.svg = svg.append("g")
+
+    //added clip view
+    env.svg = env.svg.attr("clip-path", "url(#"+clipId+")").append('g');
+
     env.xAxis = x;
     env.yAxis = y;     
     env.numerical = true;
@@ -789,11 +809,17 @@
       await interpretate(options.FrameTicksStyle, ticksstyle);
     }
 
+
+
+    
+
     if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     
     if (axis[1]) gY = svg.append("g").call(yAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
+
+
 
     let labelStyle = {...env};
 
@@ -847,19 +873,31 @@
     }
 
     if (options.FrameLabel && framed) {
-      options.FrameLabel = await interpretate(options.FrameLabel, {...env, hold:true});
+     
+      //throw(options.FrameLabel);
+
+      options.FrameLabel = await interpretate(options.FrameLabel, {...env});
+
+
 
       if (Array.isArray(options.FrameLabel)) {
 
-        const lb = await interpretate(options.FrameLabel[0], {...env, hold:true});
-        const rt = await interpretate(options.FrameLabel[1], {...env, hold:true});
+        let lb = options.FrameLabel[0];
+        let rt = options.FrameLabel[1];
+
+        if (typeof lb == "string") {
+          const copy = [lb,rt];
+          lb = [copy[1], "None"];
+          rt = [copy[0], "None"];
+        }
+
         
         let temp;
         let value;
 
       if (lb != 'None' && lb) {
         temp = {...env};
-        value = await interpretate(lb[0], temp);
+        value = lb[0];
 
         if (value != 'None' && gY) {
           g2d.Text.PutText(gY.append("text")
@@ -874,7 +912,7 @@
 
 
         temp = {...env};
-        value = await interpretate(lb[1], temp);
+        value = lb[1];
 
         if (value != 'None' && gRY) {
           g2d.Text.PutText(
@@ -892,7 +930,7 @@
       if (rt != 'None' && rt) {
 
         temp = {...env};
-        value = await interpretate(rt[1], temp);        
+        value = rt[1];      
         
         if (value != 'None' && gTX) {
           g2d.Text.PutText(
@@ -906,7 +944,7 @@
         }
 
         temp = {...env};
-        value = await interpretate(rt[0], temp);        
+        value = rt[0];        
 
         if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
@@ -982,6 +1020,8 @@
       const instancesKeys = Object.keys(env.global.stack);
 
       await interpretate(options.Prolog, env); 
+
+      
       await interpretate(args[0], env);
       interpretate(options.Epilog, env);
 
@@ -1363,7 +1403,7 @@
   g2d.SVGAttribute.virtual = true;
 
   import labToRgb from '@fantasy-color/lab-to-rgb'
-import { enabled } from 'ansi-colors';
+
 
   g2d.LABColor =  async (args, env) => {
     let lab;
