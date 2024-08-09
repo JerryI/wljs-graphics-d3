@@ -2524,271 +2524,6 @@ var _default = ({
 
 default_1 = node.default = _default;
 
-var ansiColors = {exports: {}};
-
-var symbols = {exports: {}};
-
-var hasRequiredSymbols;
-
-function requireSymbols () {
-	if (hasRequiredSymbols) return symbols.exports;
-	hasRequiredSymbols = 1;
-	(function (module) {
-
-		const isHyper = typeof process !== 'undefined' && process.env.TERM_PROGRAM === 'Hyper';
-		const isWindows = typeof process !== 'undefined' && process.platform === 'win32';
-		const isLinux = typeof process !== 'undefined' && process.platform === 'linux';
-
-		const common = {
-		  ballotDisabled: '☒',
-		  ballotOff: '☐',
-		  ballotOn: '☑',
-		  bullet: '•',
-		  bulletWhite: '◦',
-		  fullBlock: '█',
-		  heart: '❤',
-		  identicalTo: '≡',
-		  line: '─',
-		  mark: '※',
-		  middot: '·',
-		  minus: '－',
-		  multiplication: '×',
-		  obelus: '÷',
-		  pencilDownRight: '✎',
-		  pencilRight: '✏',
-		  pencilUpRight: '✐',
-		  percent: '%',
-		  pilcrow2: '❡',
-		  pilcrow: '¶',
-		  plusMinus: '±',
-		  question: '?',
-		  section: '§',
-		  starsOff: '☆',
-		  starsOn: '★',
-		  upDownArrow: '↕'
-		};
-
-		const windows = Object.assign({}, common, {
-		  check: '√',
-		  cross: '×',
-		  ellipsisLarge: '...',
-		  ellipsis: '...',
-		  info: 'i',
-		  questionSmall: '?',
-		  pointer: '>',
-		  pointerSmall: '»',
-		  radioOff: '( )',
-		  radioOn: '(*)',
-		  warning: '‼'
-		});
-
-		const other = Object.assign({}, common, {
-		  ballotCross: '✘',
-		  check: '✔',
-		  cross: '✖',
-		  ellipsisLarge: '⋯',
-		  ellipsis: '…',
-		  info: 'ℹ',
-		  questionFull: '？',
-		  questionSmall: '﹖',
-		  pointer: isLinux ? '▸' : '❯',
-		  pointerSmall: isLinux ? '‣' : '›',
-		  radioOff: '◯',
-		  radioOn: '◉',
-		  warning: '⚠'
-		});
-
-		module.exports = (isWindows && !isHyper) ? windows : other;
-		Reflect.defineProperty(module.exports, 'common', { enumerable: false, value: common });
-		Reflect.defineProperty(module.exports, 'windows', { enumerable: false, value: windows });
-		Reflect.defineProperty(module.exports, 'other', { enumerable: false, value: other }); 
-	} (symbols));
-	return symbols.exports;
-}
-
-const isObject = val => val !== null && typeof val === 'object' && !Array.isArray(val);
-
-/* eslint-disable no-control-regex */
-// this is a modified version of https://github.com/chalk/ansi-regex (MIT License)
-const ANSI_REGEX = /[\u001b\u009b][[\]#;?()]*(?:(?:(?:[^\W_]*;?[^\W_]*)\u0007)|(?:(?:[0-9]{1,4}(;[0-9]{0,4})*)?[~0-9=<>cf-nqrtyA-PRZ]))/g;
-
-const hasColor = () => {
-  if (typeof process !== 'undefined') {
-    return process.env.FORCE_COLOR !== '0';
-  }
-  return false;
-};
-
-const create = () => {
-  const colors = {
-    enabled: hasColor(),
-    visible: true,
-    styles: {},
-    keys: {}
-  };
-
-  const ansi = style => {
-    let open = style.open = `\u001b[${style.codes[0]}m`;
-    let close = style.close = `\u001b[${style.codes[1]}m`;
-    let regex = style.regex = new RegExp(`\\u001b\\[${style.codes[1]}m`, 'g');
-    style.wrap = (input, newline) => {
-      if (input.includes(close)) input = input.replace(regex, close + open);
-      let output = open + input + close;
-      // see https://github.com/chalk/chalk/pull/92, thanks to the
-      // chalk contributors for this fix. However, we've confirmed that
-      // this issue is also present in Windows terminals
-      return newline ? output.replace(/\r*\n/g, `${close}$&${open}`) : output;
-    };
-    return style;
-  };
-
-  const wrap = (style, input, newline) => {
-    return typeof style === 'function' ? style(input) : style.wrap(input, newline);
-  };
-
-  const style = (input, stack) => {
-    if (input === '' || input == null) return '';
-    if (colors.enabled === false) return input;
-    if (colors.visible === false) return '';
-    let str = '' + input;
-    let nl = str.includes('\n');
-    let n = stack.length;
-    if (n > 0 && stack.includes('unstyle')) {
-      stack = [...new Set(['unstyle', ...stack])].reverse();
-    }
-    while (n-- > 0) str = wrap(colors.styles[stack[n]], str, nl);
-    return str;
-  };
-
-  const define = (name, codes, type) => {
-    colors.styles[name] = ansi({ name, codes });
-    let keys = colors.keys[type] || (colors.keys[type] = []);
-    keys.push(name);
-
-    Reflect.defineProperty(colors, name, {
-      configurable: true,
-      enumerable: true,
-      set(value) {
-        colors.alias(name, value);
-      },
-      get() {
-        let color = input => style(input, color.stack);
-        Reflect.setPrototypeOf(color, colors);
-        color.stack = this.stack ? this.stack.concat(name) : [name];
-        return color;
-      }
-    });
-  };
-
-  define('reset', [0, 0], 'modifier');
-  define('bold', [1, 22], 'modifier');
-  define('dim', [2, 22], 'modifier');
-  define('italic', [3, 23], 'modifier');
-  define('underline', [4, 24], 'modifier');
-  define('inverse', [7, 27], 'modifier');
-  define('hidden', [8, 28], 'modifier');
-  define('strikethrough', [9, 29], 'modifier');
-
-  define('black', [30, 39], 'color');
-  define('red', [31, 39], 'color');
-  define('green', [32, 39], 'color');
-  define('yellow', [33, 39], 'color');
-  define('blue', [34, 39], 'color');
-  define('magenta', [35, 39], 'color');
-  define('cyan', [36, 39], 'color');
-  define('white', [37, 39], 'color');
-  define('gray', [90, 39], 'color');
-  define('grey', [90, 39], 'color');
-
-  define('bgBlack', [40, 49], 'bg');
-  define('bgRed', [41, 49], 'bg');
-  define('bgGreen', [42, 49], 'bg');
-  define('bgYellow', [43, 49], 'bg');
-  define('bgBlue', [44, 49], 'bg');
-  define('bgMagenta', [45, 49], 'bg');
-  define('bgCyan', [46, 49], 'bg');
-  define('bgWhite', [47, 49], 'bg');
-
-  define('blackBright', [90, 39], 'bright');
-  define('redBright', [91, 39], 'bright');
-  define('greenBright', [92, 39], 'bright');
-  define('yellowBright', [93, 39], 'bright');
-  define('blueBright', [94, 39], 'bright');
-  define('magentaBright', [95, 39], 'bright');
-  define('cyanBright', [96, 39], 'bright');
-  define('whiteBright', [97, 39], 'bright');
-
-  define('bgBlackBright', [100, 49], 'bgBright');
-  define('bgRedBright', [101, 49], 'bgBright');
-  define('bgGreenBright', [102, 49], 'bgBright');
-  define('bgYellowBright', [103, 49], 'bgBright');
-  define('bgBlueBright', [104, 49], 'bgBright');
-  define('bgMagentaBright', [105, 49], 'bgBright');
-  define('bgCyanBright', [106, 49], 'bgBright');
-  define('bgWhiteBright', [107, 49], 'bgBright');
-
-  colors.ansiRegex = ANSI_REGEX;
-  colors.hasColor = colors.hasAnsi = str => {
-    colors.ansiRegex.lastIndex = 0;
-    return typeof str === 'string' && str !== '' && colors.ansiRegex.test(str);
-  };
-
-  colors.alias = (name, color) => {
-    let fn = typeof color === 'string' ? colors[color] : color;
-
-    if (typeof fn !== 'function') {
-      throw new TypeError('Expected alias to be the name of an existing color (string) or a function');
-    }
-
-    if (!fn.stack) {
-      Reflect.defineProperty(fn, 'name', { value: name });
-      colors.styles[name] = fn;
-      fn.stack = [name];
-    }
-
-    Reflect.defineProperty(colors, name, {
-      configurable: true,
-      enumerable: true,
-      set(value) {
-        colors.alias(name, value);
-      },
-      get() {
-        let color = input => style(input, color.stack);
-        Reflect.setPrototypeOf(color, colors);
-        color.stack = this.stack ? this.stack.concat(fn.stack) : fn.stack;
-        return color;
-      }
-    });
-  };
-
-  colors.theme = custom => {
-    if (!isObject(custom)) throw new TypeError('Expected theme to be an object');
-    for (let name of Object.keys(custom)) {
-      colors.alias(name, custom[name]);
-    }
-    return colors;
-  };
-
-  colors.alias('unstyle', str => {
-    if (typeof str === 'string' && str !== '') {
-      colors.ansiRegex.lastIndex = 0;
-      return str.replace(colors.ansiRegex, '');
-    }
-    return '';
-  });
-
-  colors.alias('noop', str => str);
-  colors.none = colors.clear = colors.noop;
-
-  colors.stripColor = colors.unstyle;
-  colors.symbols = requireSymbols();
-  colors.define = define;
-  return colors;
-};
-
-ansiColors.exports = create();
-ansiColors.exports.create = create;
-
 function arrDepth(arr) {
     if (arr.length === 0)                   return 0;
     if (arr[0].length === undefined)        return 1;
@@ -3224,8 +2959,17 @@ function arrDepth(arr) {
       svg.attr("width", width + margin.left + margin.right + padding.left)
          .attr("height", height + margin.top + margin.bottom + padding.bottom);
 
+
       env.svgWidth = width + margin.left + margin.right + padding.left;
       env.svgHeight = height + margin.top + margin.bottom + padding.bottom;
+    }
+
+    let clipOffset = 0;
+    let clipMargin = 2;
+
+    if (framed) {
+      clipOffset = 7;
+      clipMargin = 0;
     }
 
     //make it focusable
@@ -3238,7 +2982,14 @@ function arrDepth(arr) {
       .attr("transform",
             "translate(" + (margin.left + padding.left) + "," + margin.top + ")");
 
-
+    const clipId = "clp"+(Math.random().toFixed(4).toString().replace('.', ''));
+    svg.append("clipPath")
+    .attr("id", clipId)
+    .append("rect")
+    .attr("width", width - 2 * clipOffset + clipMargin)
+    .attr("height", height - 2 * clipOffset + clipMargin)
+    .attr("x", clipOffset - clipMargin)
+    .attr("y", clipOffset - clipMargin);
     
     let range = [[-1.15,1.15],[-1.15,1.15]];
     let unknownRanges = true;
@@ -3514,6 +3265,10 @@ function arrDepth(arr) {
 
     env.context = g2d;
     env.svg = svg.append("g");
+
+    //added clip view
+    env.svg = env.svg.attr("clip-path", "url(#"+clipId+")").append('g');
+
     env.xAxis = x;
     env.yAxis = y;     
     env.numerical = true;
@@ -3552,11 +3307,17 @@ function arrDepth(arr) {
       await interpretate(options.FrameTicksStyle, ticksstyle);
     }
 
+
+
+    
+
     if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     
     if (axis[1]) gY = svg.append("g").call(yAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
+
+
 
     let labelStyle = {...env};
 
@@ -3610,19 +3371,31 @@ function arrDepth(arr) {
     }
 
     if (options.FrameLabel && framed) {
-      options.FrameLabel = await interpretate(options.FrameLabel, {...env, hold:true});
+     
+      //throw(options.FrameLabel);
+
+      options.FrameLabel = await interpretate(options.FrameLabel, {...env});
+
+
 
       if (Array.isArray(options.FrameLabel)) {
 
-        const lb = await interpretate(options.FrameLabel[0], {...env, hold:true});
-        const rt = await interpretate(options.FrameLabel[1], {...env, hold:true});
+        let lb = options.FrameLabel[0];
+        let rt = options.FrameLabel[1];
+
+        if (typeof lb == "string") {
+          const copy = [lb,rt];
+          lb = [copy[1], "None"];
+          rt = [copy[0], "None"];
+        }
+
         
         let temp;
         let value;
 
       if (lb != 'None' && lb) {
         temp = {...env};
-        value = await interpretate(lb[0], temp);
+        value = lb[0];
 
         if (value != 'None' && gY) {
           g2d.Text.PutText(gY.append("text")
@@ -3637,7 +3410,7 @@ function arrDepth(arr) {
 
 
         temp = {...env};
-        value = await interpretate(lb[1], temp);
+        value = lb[1];
 
         if (value != 'None' && gRY) {
           g2d.Text.PutText(
@@ -3655,7 +3428,7 @@ function arrDepth(arr) {
       if (rt != 'None' && rt) {
 
         temp = {...env};
-        value = await interpretate(rt[1], temp);        
+        value = rt[1];      
         
         if (value != 'None' && gTX) {
           g2d.Text.PutText(
@@ -3669,7 +3442,7 @@ function arrDepth(arr) {
         }
 
         temp = {...env};
-        value = await interpretate(rt[0], temp);        
+        value = rt[0];        
 
         if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
@@ -3745,8 +3518,10 @@ function arrDepth(arr) {
       const instancesKeys = Object.keys(env.global.stack);
 
       await interpretate(options.Prolog, env); 
+
+      
       await interpretate(args[0], env);
-      await interpretate(options.Epilog, env);
+      interpretate(options.Epilog, env);
 
       if (unknownRanges) {
         if (env.reRendered) {
@@ -3817,6 +3592,100 @@ function arrDepth(arr) {
 
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); };
   g2d.Graphics.destroy = (args, env) => { console.error('Nothing to destroy...'); };
+
+  g2d.JoinForm = (args, env) => {
+    env.joinform = interpretate(args[0], env);
+    console.warn('JoinForm is not implemented!');
+  };
+
+  const curve = {};
+  curve.BezierCurve = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = env.path; 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    let indexLeft = points.length - 1;
+
+    if (env.startQ) {
+      path.moveTo(...points[0]);
+    
+      for (let i=1; i<points.length - 2; i+=3) {
+          indexLeft -= 3;
+          path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]); 
+      }
+
+      env.startQ = false;
+    } else {
+      //path.moveTo(...points[0]);
+    
+      for (let i=0; i<points.length - 2; i+=3) {
+          indexLeft -= 3;
+          path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]); 
+      }     
+    }
+
+
+    if (indexLeft > 0) {
+      path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
+    }    
+  }; 
+
+  curve.Line = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = env.path; 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    if (env.startQ) {
+      path.moveTo(...points[0]);
+      for (let i =1; i<points.length; ++i)
+        path.lineTo(...points[i]);      
+
+      env.startQ = false;
+
+      return;
+    }
+
+    for (let i =0; i<points.length; ++i)
+      path.lineTo(...points[i]);
+
+  };
+
+  g2d.JoinedCurve = async (args, env) => {
+    const path = d3.path();
+    await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
+    
+    return env.svg.append("path")
+    .attr("fill", "none")
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('opacity', env.opacity)
+    .attr("stroke", env.color)
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", path); 
+  };  
+
+  g2d.CapForm = () => {};
+
+  g2d.FilledCurve = async (args, env) => {
+    const path = d3.path();
+    await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
+    
+    return env.svg.append("path")
+    .attr("fill", env.color)
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('opacity', env.opacity)
+    .attr('fill-rule', 'evenodd')
+    .attr("stroke", 'none')
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", path); 
+  };
 
   g2d.Inset = async (args, env) => {
     let pos = [0,0];
@@ -3997,6 +3866,7 @@ function arrDepth(arr) {
   };
 
   g2d.SVGAttribute.virtual = true;
+
 
   g2d.LABColor =  async (args, env) => {
     let lab;
@@ -4565,6 +4435,8 @@ function arrDepth(arr) {
     //await interpretate(args[0], env);
   //}  
 
+  g2d.Thickness = () => {};
+
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
   };
@@ -4773,8 +4645,10 @@ function arrDepth(arr) {
   let hsv2hsl = (h,s,v,l=v-v*s/2, m=Math.min(l,1-l)) => [h,m?(v-l)/m:0,l];
 
   g2d.Hue = async (args, env) => {
-    if (args.length == 3) {
       let color = await Promise.all(args.map(el => interpretate(el, env)));
+      if (color.length < 3) {
+        color = [color[0], 1,1];
+      }
       color = hsv2hsl(...color);
       color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
@@ -4790,13 +4664,15 @@ function arrDepth(arr) {
   
       env.exposed.color = env.color;
 
-    } else {
-      console.error('g2d: Hue must have three arguments!');
-    }
   }; 
 
   g2d.Hue.update = async (args, env) => {
     let color = await Promise.all(args.map(el => interpretate(el, env)));
+
+    if (color.length < 3) {
+      color = [color[0], 1,1];
+    }
+
     color = hsv2hsl(...color);
     color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
@@ -5074,9 +4950,17 @@ function arrDepth(arr) {
     points = points.map((p) => [x(p[0]), y(p[1])]);
 
     path.moveTo(...points[0]);
+    let indexLeft = points.length - 1;
     for (let i=1; i<points.length - 2; i+=3) {
+        indexLeft -= 3;
         path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]); 
     }
+
+    if (indexLeft > 0) {
+      path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
+    }
+
+    //if (env.returnPath) return path;
 
     return env.svg.append("path")
         .attr("fill", "none")
@@ -5121,19 +5005,23 @@ function arrDepth(arr) {
 
       break;        
       case 2:
-       
-        object = env.svg.append("path")
-        .datum(data)
-        .attr("class", 'line-'+uid)
-        .attr("vector-effect", "non-scaling-stroke")
-        .attr("fill", "none")
-        .attr('opacity', env.opacity)
-        .attr("stroke", env.color)
-        .attr("stroke-width", env.strokeWidth)
-        .attr("d", d3.line()
-          .x(function(d) { return x(d[0]) })
-          .y(function(d) { return y(d[1]) })
-          );    
+        if (env.returnPath) {
+          object = null;
+          throw 'Not implemented!';
+        } else {
+          object = env.svg.append("path")
+          .datum(data)
+          .attr("class", 'line-'+uid)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("fill", "none")
+          .attr('opacity', env.opacity)
+          .attr("stroke", env.color)
+          .attr("stroke-width", env.strokeWidth)
+          .attr("d", d3.line()
+            .x(function(d) { return x(d[0]) })
+            .y(function(d) { return y(d[1]) })
+            );   
+        } 
       break;
     
       case 3:

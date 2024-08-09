@@ -1,6 +1,6 @@
 {
   "name": "wljs-graphics-d3",
-  "version": "0.8.9",
+  "version": "0.9.1",
   "description": "D3 implementation of Mathematica's Graphics",
   "scripts": {
     "build": "node --max-old-space-size=8192 ./node_modules/.bin/rollup --config rollup.config.mjs",
@@ -14,7 +14,9 @@
     "styles": "src/styles.css",
     "kernel": "src/Kernel.wl",
     "category": "Plotting & Graphics",
-    "priority": 10
+    "priority": 10,
+    "figureExportRequired": true,
+    "cellExportRequired": true
   },
   "repository": {
     "type": "git",

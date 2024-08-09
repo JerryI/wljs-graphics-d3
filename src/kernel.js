@@ -449,8 +449,17 @@
       svg.attr("width", width + margin.left + margin.right + padding.left)
          .attr("height", height + margin.top + margin.bottom + padding.bottom);
 
+
       env.svgWidth = width + margin.left + margin.right + padding.left;
       env.svgHeight = height + margin.top + margin.bottom + padding.bottom;
+    }
+
+    let clipOffset = 0;
+    let clipMargin = 2;
+
+    if (framed) {
+      clipOffset = 7;
+      clipMargin = 0;
     }
 
     //make it focusable
@@ -463,7 +472,14 @@
       .attr("transform",
             "translate(" + (margin.left + padding.left) + "," + margin.top + ")");
 
-
+    const clipId = "clp"+(Math.random().toFixed(4).toString().replace('.', ''));
+    var clip = svg.append("clipPath")
+    .attr("id", clipId)
+    .append("rect")
+    .attr("width", width - 2 * clipOffset + clipMargin)
+    .attr("height", height - 2 * clipOffset + clipMargin)
+    .attr("x", clipOffset - clipMargin)
+    .attr("y", clipOffset - clipMargin);
     
     let range = [[-1.15,1.15],[-1.15,1.15]];
     let unknownRanges = true;
@@ -751,6 +767,10 @@
 
     env.context = g2d;
     env.svg = svg.append("g")
+
+    //added clip view
+    env.svg = env.svg.attr("clip-path", "url(#"+clipId+")").append('g');
+
     env.xAxis = x;
     env.yAxis = y;     
     env.numerical = true;
@@ -789,11 +809,17 @@
       await interpretate(options.FrameTicksStyle, ticksstyle);
     }
 
+
+
+    
+
     if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     
     if (axis[1]) gY = svg.append("g").call(yAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[3]) gRY = svg.append("g").attr("transform", "translate(" + width + ", 0)").call(ryAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
+
+
 
     let labelStyle = {...env};
 
@@ -847,19 +873,31 @@
     }
 
     if (options.FrameLabel && framed) {
-      options.FrameLabel = await interpretate(options.FrameLabel, {...env, hold:true});
+     
+      //throw(options.FrameLabel);
+
+      options.FrameLabel = await interpretate(options.FrameLabel, {...env});
+
+
 
       if (Array.isArray(options.FrameLabel)) {
 
-        const lb = await interpretate(options.FrameLabel[0], {...env, hold:true});
-        const rt = await interpretate(options.FrameLabel[1], {...env, hold:true});
+        let lb = options.FrameLabel[0];
+        let rt = options.FrameLabel[1];
+
+        if (typeof lb == "string") {
+          const copy = [lb,rt];
+          lb = [copy[1], "None"];
+          rt = [copy[0], "None"];
+        }
+
         
         let temp;
         let value;
 
       if (lb != 'None' && lb) {
         temp = {...env};
-        value = await interpretate(lb[0], temp);
+        value = lb[0];
 
         if (value != 'None' && gY) {
           g2d.Text.PutText(gY.append("text")
@@ -874,7 +912,7 @@
 
 
         temp = {...env};
-        value = await interpretate(lb[1], temp);
+        value = lb[1];
 
         if (value != 'None' && gRY) {
           g2d.Text.PutText(
@@ -892,7 +930,7 @@
       if (rt != 'None' && rt) {
 
         temp = {...env};
-        value = await interpretate(rt[1], temp);        
+        value = rt[1];      
         
         if (value != 'None' && gTX) {
           g2d.Text.PutText(
@@ -906,7 +944,7 @@
         }
 
         temp = {...env};
-        value = await interpretate(rt[0], temp);        
+        value = rt[0];        
 
         if (value != 'None' && gX) {
           g2d.Text.PutText(gX.append("text")
@@ -982,8 +1020,10 @@
       const instancesKeys = Object.keys(env.global.stack);
 
       await interpretate(options.Prolog, env); 
+
+      
       await interpretate(args[0], env);
-      await interpretate(options.Epilog, env);
+      interpretate(options.Epilog, env);
 
       if (unknownRanges) {
         if (env.reRendered) {
@@ -1083,6 +1123,100 @@
 
   g2d.Graphics.update = (args, env) => { console.error('root update method for Graphics is not supported'); }
   g2d.Graphics.destroy = (args, env) => { console.error('Nothing to destroy...'); }
+
+  g2d.JoinForm = (args, env) => {
+    env.joinform = interpretate(args[0], env);
+    console.warn('JoinForm is not implemented!');
+  }
+
+  const curve = {};
+  curve.BezierCurve = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = env.path; 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    let indexLeft = points.length - 1;
+
+    if (env.startQ) {
+      path.moveTo(...points[0]);
+    
+      for (let i=1; i<points.length - 2; i+=3) {
+          indexLeft -= 3;
+          path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]) 
+      }
+
+      env.startQ = false;
+    } else {
+      //path.moveTo(...points[0]);
+    
+      for (let i=0; i<points.length - 2; i+=3) {
+          indexLeft -= 3;
+          path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]) 
+      }     
+    }
+
+
+    if (indexLeft > 0) {
+      path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
+    }    
+  } 
+
+  curve.Line = async (args, env) => {
+    let points = await interpretate(args[0], env);
+    var path = env.path; 
+
+    const x = env.xAxis;
+    const y = env.yAxis;
+
+    points = points.map((p) => [x(p[0]), y(p[1])]);
+
+    if (env.startQ) {
+      path.moveTo(...points[0]);
+      for (let i =1; i<points.length; ++i)
+        path.lineTo(...points[i]);      
+
+      env.startQ = false;
+
+      return;
+    }
+
+    for (let i =0; i<points.length; ++i)
+      path.lineTo(...points[i]);
+
+  }
+
+  g2d.JoinedCurve = async (args, env) => {
+    const path = d3.path();
+    await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
+    
+    return env.svg.append("path")
+    .attr("fill", "none")
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('opacity', env.opacity)
+    .attr("stroke", env.color)
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", path); 
+  }  
+
+  g2d.CapForm = () => {}
+
+  g2d.FilledCurve = async (args, env) => {
+    const path = d3.path();
+    await interpretate(args[0], {...env, path: path, context: [curve, g2d], startQ: true});
+    
+    return env.svg.append("path")
+    .attr("fill", env.color)
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr('opacity', env.opacity)
+    .attr('fill-rule', 'evenodd')
+    .attr("stroke", 'none')
+    .attr("stroke-width", env.strokeWidth)
+    .attr("d", path); 
+  }
 
   g2d.Inset = async (args, env) => {
     let pos = [0,0];
@@ -1269,7 +1403,7 @@
   g2d.SVGAttribute.virtual = true;
 
   import labToRgb from '@fantasy-color/lab-to-rgb'
-import { enabled } from 'ansi-colors';
+
 
   g2d.LABColor =  async (args, env) => {
     let lab;
@@ -1839,6 +1973,8 @@ import { enabled } from 'ansi-colors';
     //await interpretate(args[0], env);
   //}  
 
+  g2d.Thickness = () => {}
+
   g2d.AbsoluteThickness = (args, env) => {
     env.strokeWidth = interpretate(args[0], env);
   }
@@ -2066,8 +2202,10 @@ import { enabled } from 'ansi-colors';
   let hsv2hsl = (h,s,v,l=v-v*s/2, m=Math.min(l,1-l)) => [h,m?(v-l)/m:0,l];
 
   g2d.Hue = async (args, env) => {
-    if (args.length == 3) {
       let color = await Promise.all(args.map(el => interpretate(el, env)));
+      if (color.length < 3) {
+        color = [color[0], 1,1];
+      }
       color = hsv2hsl(...color);
       color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
@@ -2083,13 +2221,15 @@ import { enabled } from 'ansi-colors';
   
       env.exposed.color = env.color;
 
-    } else {
-      console.error('g2d: Hue must have three arguments!');
-    }
   } 
 
   g2d.Hue.update = async (args, env) => {
     let color = await Promise.all(args.map(el => interpretate(el, env)));
+
+    if (color.length < 3) {
+      color = [color[0], 1,1];
+    }
+
     color = hsv2hsl(...color);
     color = [color[0], (color[1]*100).toFixed(2), (color[2]*100).toFixed(2)];
 
@@ -2367,9 +2507,17 @@ import { enabled } from 'ansi-colors';
     points = points.map((p) => [x(p[0]), y(p[1])]);
 
     path.moveTo(...points[0]);
+    let indexLeft = points.length - 1;
     for (let i=1; i<points.length - 2; i+=3) {
+        indexLeft -= 3;
         path.bezierCurveTo(...points[i], ...points[i+1], ...points[i+2]) 
     }
+
+    if (indexLeft > 0) {
+      path.quadraticCurveTo(...points[points.length - 2], ...points[points.length -1]);
+    }
+
+    //if (env.returnPath) return path;
 
     return env.svg.append("path")
         .attr("fill", "none")
@@ -2414,19 +2562,23 @@ import { enabled } from 'ansi-colors';
 
       break;        
       case 2:
-       
-        object = env.svg.append("path")
-        .datum(data)
-        .attr("class", 'line-'+uid)
-        .attr("vector-effect", "non-scaling-stroke")
-        .attr("fill", "none")
-        .attr('opacity', env.opacity)
-        .attr("stroke", env.color)
-        .attr("stroke-width", env.strokeWidth)
-        .attr("d", d3.line()
-          .x(function(d) { return x(d[0]) })
-          .y(function(d) { return y(d[1]) })
-          );    
+        if (env.returnPath) {
+          object = null;
+          throw 'Not implemented!';
+        } else {
+          object = env.svg.append("path")
+          .datum(data)
+          .attr("class", 'line-'+uid)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("fill", "none")
+          .attr('opacity', env.opacity)
+          .attr("stroke", env.color)
+          .attr("stroke-width", env.strokeWidth)
+          .attr("d", d3.line()
+            .x(function(d) { return x(d[0]) })
+            .y(function(d) { return y(d[1]) })
+            );   
+        } 
       break;
     
       case 3:
