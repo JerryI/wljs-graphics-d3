@@ -4075,11 +4075,20 @@ function arrDepth(arr) {
  };
 
  g2d.Arrow.updateColor = (args, env) => {
-  env.local.arrow.attr("stroke", env.color);
+  if (Array.isArray(env.local.arrow)) {
+    env.local.arrow.map((e) => e.attr("stroke", env.color));
+  } else {
+    env.local.arrow.attr("stroke", env.color);
+  }
+  
  };
 
   g2d.Arrow.updateOpacity = (args, env) => {
-    env.local.arrow.attr("opacity", env.opacity);
+    if (Array.isArray(env.local.arrow)) {
+      env.local.arrow.map((e) => e.attr("opacity", env.opacity));
+    } else {
+      env.local.arrow.attr("opacity", env.opacity);
+    }    
   };
 
  g2d.Arrow.virtual = true;
@@ -5052,12 +5061,20 @@ function arrDepth(arr) {
 
     env.local.object = object;
 
+    if (env.colorRefs) {
+      env.colorRefs[env.root.uid] = env.root;
+    }
+
     return object;
   };
 
   //g2d.Line.destroy = (args, env) => {
     //console.warn('Line was destroyed');
   //}
+
+  g2d.Line.updateColor = (args, env) => {
+    env.local.object.style("stroke", env.color);
+  };
 
 
 
