@@ -3990,6 +3990,7 @@ function arrDepth(arr) {
    .attr("fill", env.color)
    .attr("stroke", "none").scale([env.arrowHead]);
 
+   env.local.marker = uid;
    env.svg.call(arrow);
 
    const path = await interpretate(args[0], env);
@@ -4002,6 +4003,8 @@ function arrDepth(arr) {
 
     return object;
   }
+
+
 
    env.local.line = d3.line()
      .x(function(d) { return env.xAxis(d[0]) })
@@ -4075,6 +4078,11 @@ function arrDepth(arr) {
  };
 
  g2d.Arrow.updateColor = (args, env) => {
+  if (typeof env.local.marker == 'string') {
+    env.local.marker = d3.select(document.getElementById(env.local.marker).firstChild);
+    //throw(env.local.marker.node());
+  }
+  env.local.marker.attr("fill", env.color);
   if (Array.isArray(env.local.arrow)) {
     env.local.arrow.map((e) => e.attr("stroke", env.color));
   } else {
@@ -4084,6 +4092,10 @@ function arrDepth(arr) {
  };
 
   g2d.Arrow.updateOpacity = (args, env) => {
+    if (typeof env.local.marker == 'string') {
+      env.local.marker = d3.select(document.getElementById(env.local.marker).firstChild);
+    }    
+    env.local.marker.attr("opacity", env.opacity);
     if (Array.isArray(env.local.arrow)) {
       env.local.arrow.map((e) => e.attr("opacity", env.opacity));
     } else {
