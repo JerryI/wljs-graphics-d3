@@ -1647,6 +1647,26 @@
   if (env.colorRefs) {
     delete env.colorRefs[env.root.uid];
   }
+
+  if (env.opacityRefs) {
+    delete env.opacityRefs[env.root.uid];
+  }
+
+  if (Array.isArray(env.local.arrow)) {
+    env.local.arrow.map((e)=>e.remove);
+  } else {
+    env.local.arrow.remove();
+  }
+
+  if (typeof env.local.marker == 'string') {
+    const c = document.getElementById(env.local.marker);
+    env.local.marker = d3.select(c.firstChild);
+    env.local.marker.remove();
+    c.remove();
+  } else {
+    env.local.marker.remove();
+  }
+  
  }  
 
  g2d.ImageScaled = async (args, env) => {
