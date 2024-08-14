@@ -4010,8 +4010,11 @@ function arrDepth(arr) {
      .x(function(d) { return env.xAxis(d[0]) })
      .y(function(d) { return env.yAxis(d[1]) });
 
-  if (!path[0][0][0]) {
+  console.warn(path);
 
+  if (!path[0][0][0] && (typeof path[0][0][0] != 'number')) {
+    //console.log('Condtions special');
+    //console.warn(path);
      const object = env.svg.append("path")
      .datum(path)
      .attr("vector-effect", "non-scaling-stroke")
@@ -4034,8 +4037,10 @@ function arrDepth(arr) {
      return object;
   } else {
     const object = [];
+    //console.log('Condtions object');
 
     path.forEach((p) => {
+      
       object.push(env.svg.append("path")
       .datum(p)
       .attr("vector-effect", "non-scaling-stroke")
@@ -4083,8 +4088,8 @@ function arrDepth(arr) {
     //throw(env.local.marker.node());
   }
   env.local.marker.attr("fill", env.color);
-  if (Array.isArray(env.local.arrow)) {
-    env.local.arrow.map((e) => e.attr("stroke", env.color));
+  if (Array.isArray(env.local.arrows)) {
+    env.local.arrows.map((e) => e.attr("stroke", env.color));
   } else {
     env.local.arrow.attr("stroke", env.color);
   }
@@ -4096,8 +4101,8 @@ function arrDepth(arr) {
       env.local.marker = d3.select(document.getElementById(env.local.marker).firstChild);
     }    
     env.local.marker.attr("opacity", env.opacity);
-    if (Array.isArray(env.local.arrow)) {
-      env.local.arrow.map((e) => e.attr("opacity", env.opacity));
+    if (Array.isArray(env.local.arrows)) {
+      env.local.arrows.map((e) => e.attr("opacity", env.opacity));
     } else {
       env.local.arrow.attr("opacity", env.opacity);
     }    
@@ -4114,8 +4119,8 @@ function arrDepth(arr) {
     delete env.opacityRefs[env.root.uid];
   }
 
-  if (Array.isArray(env.local.arrow)) {
-    env.local.arrow.map((e)=>e.remove);
+  if (Array.isArray(env.local.arrows)) {
+    env.local.arrows.map((e)=>e.remove);
   } else {
     env.local.arrow.remove();
   }
@@ -7020,10 +7025,8 @@ g2d.Image.destroy = (args, env) => {
   
 };
 
-
-
-
-
+g2d.Image.virtual = true;
+g2d.Graphics.virtual = true;
 
 
 g2d.GraphicsGroupBox = g2d.GraphicsGroup;
