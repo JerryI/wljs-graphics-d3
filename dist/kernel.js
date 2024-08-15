@@ -3498,7 +3498,7 @@ function arrDepth(arr) {
         y: y
       };
 
-      if (!env.inset) {
+      if (!env.inset && (width >= 160 && height >= 98)) {
 
         //Setting GUI
         const gui = new GUI$1({ autoPlace: false, name: '...' , closed:true});
