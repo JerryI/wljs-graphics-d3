@@ -36,7 +36,7 @@
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "CurrentValue", "FontColor", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","Full","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "ViewMatrix", "CurrentValue", "FontColor", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","Full","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   //g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -1228,6 +1228,10 @@
     if (args.length > 2) opos = await interpretate(args[2], env);
     if (args.length > 3) size = await interpretate(args[3], env);
 
+    const opts = await core._getRules(args, env);
+
+    
+
     const group = env.svg.append('g');
     const copy = {global: env.global, inset: group};
 
@@ -1245,7 +1249,7 @@
     if (!opos) {
       opos = [bbox.width/2, bbox.height/2];
     } else {
-      opos = [0,0]
+      //opos = [0,0]
     }
 
     console.log(bbox);
@@ -1274,9 +1278,14 @@
     env.local.scale = scale;
     env.local.matrix = 'matrix(' + scale + ', 0, 0, ' + scale + ', ' + zx + ', ' + zy + ')';
 
-    const xx =(   env.xAxis(pos[0]) - env.xAxis(0) ) / scale   + (bbox.width/2 - opos[0]);
-    const yy =  (   env.yAxis(pos[1]) - env.yAxis(0) ) /scale   + (bbox.height/2 - opos[1]);
+    const xx =(   env.xAxis(pos[0]) - env.xAxis(0) ) / scale   + (  opos[0]);
+    const yy =  (   env.yAxis(pos[1]) - env.yAxis(0) ) /scale   + (  opos[1]);
 
+    if (opts.ViewMatrix === false) {
+      env.local.matrix = '';
+      return group;
+    }
+    
     return group.attr('transform', env.local.matrix + ' translate(' + xx + ',' + yy + ')');
   }
 
@@ -4521,11 +4530,16 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
     if (env.inset) {
       const foreignObject = env.inset.append('foreignObject')
-      .attr('width', target_width / dpi)
-      .attr('height', target_width / dpi);
+      .attr('width', target_width)
+      .attr('height', target_height);
+
+
     
       const canvas = foreignObject.append('xhtml:canvas')
       .attr('xmlns', 'http://www.w3.org/1999/xhtml').node();
+
+      canvas.width = target_width;
+      canvas.height = target_height;
 
       canvas.style.width = target_width / dpi + 'px';
       canvas.style.height = target_height / dpi + 'px';
@@ -4562,9 +4576,11 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
     
     
-    benchmark.push(`${performance.now() - time} passed`);
+    //benchmark.push(`${performance.now() - time} passed`);
 
-    console.warn(benchmark);
+    //console.warn(benchmark);
+
+    return canvas;
 }
 
 g2d.Image.update = async (args, env) => {
