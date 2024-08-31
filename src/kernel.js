@@ -1,6 +1,6 @@
   import * as dat from 'dat.gui';
 
-  function arrDepth(arr) {
+  function arrdims(arr) {
     if (arr.length === 0)                   return 0;
     if (arr[0].length === undefined)        return 1;
     if (arr[0][0].length === undefined)     return 2;
@@ -1538,9 +1538,13 @@
    .attr("stroke", "none").scale([env.arrowHead]);
 
    env.local.marker = uid;
+   //env.normalForm = true; //convert all numeric arrays to a normal form
    env.svg.call(arrow);
 
-   const path = await interpretate(args[0], env);
+   let path = await interpretate(args[0], env);
+   if (path instanceof NumericArrayObject) { // convert back automatically
+    path = path.normal();
+   }
 
    if (!Array.isArray(path)) {
     //if not a numerical data, but some other curves
@@ -1615,7 +1619,14 @@
    const y = env.yAxis;
 
 
-   const path = await interpretate(args[0], env);
+   let path = await interpretate(args[0], env);
+   //console.log(path);
+   if (path instanceof NumericArrayObject) { // convert back automatically
+    path = path.normal();
+   }
+
+   //console.log(path);
+
    if (path[0][0][0]) throw('Arrows update method does not support multiple traces');
 
    //console.log(env.local);
@@ -1987,6 +1998,7 @@
 
   g2d.GraphicsComplex = async (args, env) => {
     const vertices = await interpretate(args[0], env);
+    
     const opts = await core._getRules(args, env);
     const copy = {...env, vertices: vertices, context: [g2dComplex, g2d]};
 
@@ -2020,9 +2032,6 @@
     return await interpretate(args[0], env);
   }
 
-  g2d.GraphicsGroup.update = async (args, env) => {
-    return await interpretate(args[0], env);
-  }  
 
   //g2d.GraphicsGroup.destroy = async (args, env) => {
     //await interpretate(args[0], env);
@@ -2381,6 +2390,9 @@
   //this IS an instance
   g2d.Polygon = async (args, env) => {
     let points = await interpretate(args[0], env);
+    if (points instanceof NumericArrayObject) { // convert back automatically
+      points = data.normal();
+     }
   
     env.local.line = d3.line()
           .x(function(d) { return env.xAxis(d[0]) })
@@ -2455,6 +2467,10 @@
   
   g2d.Polygon.update = async (args, env) => {
     let points = await interpretate(args[0], env);  
+
+    if (points instanceof NumericArrayObject) { // convert back automatically
+      points = points.normal();
+    }
 
     if (env.local.polygons) {
       throw 'update method for many polygons in not supported'
@@ -2588,6 +2604,10 @@
     const globalOffset = env.offset;
     
     let data = await interpretate(args[0], env);
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+     }
+    
     const x = env.xAxis;
     const y = env.yAxis;
 
@@ -2599,7 +2619,7 @@
     let object;
 
     //TODO: Get rid of CLASSES!!!!
-    switch(arrDepth(data)) {
+    switch(arrdims(data)) {
       case 0:
         //empty
         object = env.svg.append("path")
@@ -2683,8 +2703,12 @@
 
 
   g2d.Line.update = async (args, env) => {
-
     let data = await interpretate(args[0], env);
+
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+     }
+
     const x = env.xAxis;
     const y = env.yAxis;
 
@@ -2693,7 +2717,7 @@
     let obj;
 
 
-    switch(arrDepth(data)) {
+    switch(arrdims(data)) {
       case 0:
         //empty
         obj = env.svg.selectAll('.line-'+env.local.uid)
@@ -3259,10 +3283,13 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
   g2d.Point = async (args, env) => {
     let data = await interpretate(args[0], env);
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+     }
     const x = env.xAxis;
     const y = env.yAxis;
 
-      const dp = arrDepth(data);
+      const dp = arrdims(data);
       if (dp === 0) {
           data = [];
       } else {
@@ -3335,9 +3362,12 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+     }
     
 
-    const dp = arrDepth(data);
+    const dp = arrdims(data);
     if (dp === 0) {
         data = [];
     } else {
@@ -3844,7 +3874,7 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     const pos = await interpretate(args[1], env);
     const group = env.svg.append("g");
 
-   // if (arrDepth(pos) > 1) throw 'List arguments for Translate is not supported for now!';
+   // if (arrdims(pos) > 1) throw 'List arguments for Translate is not supported for now!';
     
     env.local.group = group;
 
@@ -4203,10 +4233,10 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     }
   }
 
-  function checkDepth(array, size = []) {
+  function checkdims(array, size = []) {
     if (Array.isArray(array)) {
       size.push(array.length);
-      return checkDepth(array[0], size);
+      return checkdims(array[0], size);
     }
     return size;
   }
@@ -4255,17 +4285,17 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     //console.log('ACCELERATOR!');
     
     
-    const depth = [];
+    const dims = [];
     let size = (args[0].length - 1);
-    depth.push(size);
+    dims.push(size);
 
     if (args[0][1][0] === 'List') {
       size = size * (args[0][1].length - 1);
-      depth.push((args[0][1].length - 1));
+      dims.push((args[0][1].length - 1));
 
       if (args[0][1][1][0] === 'List') {
         size = size * (args[0][1][1].length - 1);
-        depth.push((args[0][1][1].length - 1));
+        dims.push((args[0][1][1].length - 1));
       }
     }
 
@@ -4279,7 +4309,7 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     
     //benchmark.push(performance.now() - time);
     //console.warn(benchmark);
-    return {buffer: array, depth: depth};
+    return {buffer: array, dims: dims};
   }
 
   numericAccelerator.NumericArray.update = numericAccelerator.NumericArray;
@@ -4350,16 +4380,16 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     Byte: {
       constructor: Uint8Array,
       convert: (array) => {
-        if (array.depth.length === 3) {
-          if (array.depth[2] === 4) {
+        if (array.dims.length === 3) {
+          if (array.dims[2] === 4) {
             //console.error(array);
             const rgba = new Uint8ClampedArray(array.buffer);
             //moveRGB(array.buffer, rgba, size);
             return rgba;
             //return array.buffer;
           }
-          if (array.depth[2] === 3) {
-            const size = array.depth[0] * array.depth[1];
+          if (array.dims[2] === 3) {
+            const size = array.dims[0] * array.dims[1];
             const rgba = new Uint8ClampedArray(size << 2);
             moveRGB(array.buffer, rgba, size);
             return rgba;
@@ -4368,8 +4398,8 @@ function vectorAngle ([ux, uy], [vx, vy]) {
           throw 'It must be RGB or RGBA!';
         }
 
-        if (array.depth.length === 2) {
-          const size = array.depth[0] * array.depth[1];
+        if (array.dims.length === 2) {
+          const size = array.dims[0] * array.dims[1];
           const rgba = new Uint8ClampedArray(size << 2);
           moveGray(array.buffer, rgba, size);
           return rgba;          
@@ -4382,7 +4412,7 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     Bit: {
       constructor: Uint8Array,
       convert: (array) => {
-        const size = array.depth[0] * array.depth[1];
+        const size = array.dims[0] * array.dims[1];
         const rgba = new Uint8ClampedArray(size << 2);
         moveGrayBits(array.buffer, rgba, size);
         return rgba;  
@@ -4392,16 +4422,16 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     Real32: {
       constructor: Float32Array,
       convert: (array) => {
-        if (array.depth.length === 3) {
-          if (array.depth[2] === 4) {
-            const size = array.depth[0] * array.depth[1];
+        if (array.dims.length === 3) {
+          if (array.dims[2] === 4) {
+            const size = array.dims[0] * array.dims[1];
             const rgba = new Uint8ClampedArray(size << 2);
             moveRGBAReal(array.buffer, rgba, size);
             return rgba;
           }
 
-          if (array.depth[2] === 3) {
-            const size = array.depth[0] * array.depth[1];
+          if (array.dims[2] === 3) {
+            const size = array.dims[0] * array.dims[1];
             const rgba = new Uint8ClampedArray(size << 2);
             moveRGBReal(array.buffer, rgba, size);
             return rgba;
@@ -4410,8 +4440,8 @@ function vectorAngle ([ux, uy], [vx, vy]) {
           throw 'It must be RGB or RGBA!';
         }
 
-        if (array.depth.length === 2) {
-          const size = array.depth[0] * array.depth[1];
+        if (array.dims.length === 2) {
+          const size = array.dims[0] * array.dims[1];
           const rgba = new Uint8ClampedArray(size << 2);
           moveGrayReal(array.buffer, rgba, size);
           return rgba;          
@@ -4424,15 +4454,15 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     Real64: {
       contructor: Float64Array,
       convert: (array) => {
-        if (array.depth.length === 3) {
-          if (array.depth[2] === 4) {
-            const size = array.depth[0] * array.depth[1];
+        if (array.dims.length === 3) {
+          if (array.dims[2] === 4) {
+            const size = array.dims[0] * array.dims[1];
             const rgba = new Uint8ClampedArray(size << 2);
             moveRGBAReal(array.buffer, rgba, size);
             return rgba;
           }
-          if (array.depth[2] === 3) {
-            const size = array.depth[0] * array.depth[1];
+          if (array.dims[2] === 3) {
+            const size = array.dims[0] * array.dims[1];
             const rgba = new Uint8ClampedArray(size << 2);
             moveRGBReal(array.buffer, rgba, size);
             return rgba;
@@ -4441,8 +4471,8 @@ function vectorAngle ([ux, uy], [vx, vy]) {
           throw 'It must be RGB or RGBA!';
         }
 
-        if (array.depth.length === 2) {
-          const size = array.depth[0] * array.depth[1];
+        if (array.dims.length === 2) {
+          const size = array.dims[0] * array.dims[1];
           const rgba = new Uint8ClampedArray(size << 2);
           moveGrayReal(array.buffer, rgba, size);
           return rgba;          
@@ -4478,7 +4508,8 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
     //if not typed array
     if (Array.isArray(data)) {
-      data = {buffer: data.flat(Infinity), depth: checkDepth(data)};
+      console.warn('Will be slow. Not a typed array');
+      data = {buffer: data.flat(Infinity), dims: checkdims(data)};
     }
 
     imageData = type.convert(data);
@@ -4488,11 +4519,11 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     env.local.type = type;
 
     console.warn('ImageSize');
-    console.warn(data.depth);
-    const height = data.depth[0];
-    const width  = data.depth[1];
+    console.warn(data.dims);
+    const height = data.dims[0];
+    const width  = data.dims[1];
 
-    env.local.dims = data.depth;
+    env.local.dims = data.dims;
 
     console.log({imageData, width, height});
 
@@ -4588,7 +4619,7 @@ g2d.Image.update = async (args, env) => {
     //if not typed array
     if (Array.isArray(data)) {
       console.warn('Image:update: not a typed array. It will be slow...');
-      data = {buffer: data.flat(Infinity), depth: checkDepth(data)};
+      data = {buffer: data.flat(Infinity), dims: checkdims(data)};
     }    
 
     let imageData = env.local.type.convert(data);
