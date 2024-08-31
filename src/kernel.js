@@ -1225,6 +1225,10 @@
     if (args.length > 1) pos = await interpretate(args[1], env);
     let opos;
 
+    if (pos instanceof NumericArrayObject) { // convert back automatically
+      pos = pos.normal();
+    }
+
     if (args.length > 2) opos = await interpretate(args[2], env);
     if (args.length > 3) size = await interpretate(args[3], env);
 
@@ -1290,7 +1294,11 @@
   }
 
   g2d.Inset.update = async (args, env) => {
-    const pos = await interpretate(args[1], env);
+    let pos = await interpretate(args[1], env);
+
+    if (pos instanceof NumericArrayObject) { // convert back automatically
+      pos = pos.normal();
+    }
 
     const xx =(   env.xAxis(pos[0]) - env.xAxis(0) ) / env.local.scale   + (env.local.bbox.width/2 - env.local.opos[0]);
     const yy =  (   env.yAxis(pos[1]) - env.yAxis(0) ) /env.local.scale   + (env.local.bbox.height/2 - env.local.opos[1]);
@@ -1717,7 +1725,11 @@
 
   g2d.Text = async (args, env) => {
     const text = await interpretate(args[0], env);
-    const coords = await interpretate(args[1], env);
+    let coords = await interpretate(args[1], env);
+
+    if (coords instanceof NumericArrayObject) { // convert back automatically
+      coords = coords.normal();
+    }
 
 
     env.local.text = text;
@@ -1878,7 +1890,11 @@
 
   g2d.Text.update = async (args, env) => {
     const text = await interpretate(args[0], env);
-    const coords = await interpretate(args[1], env);
+    let coords = await interpretate(args[1], env);
+
+    if (coords instanceof NumericArrayObject) { // convert back automatically
+      coords = coords.normal();
+    }
 
     let trans;
 
@@ -2832,6 +2848,10 @@
   g2d.Circle = async (args, env) => {
 
     let data = await interpretate(args[0], env);
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+    }
+
     let radius = [1, 1]; 
 
     if (args.length > 1) {
@@ -2880,6 +2900,11 @@
 
   g2d.Circle.update = async (args, env) => {
     let data = await interpretate(args[0], env);
+
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+    }
+
     let radius = 1; 
 
     if (args.length > 1) {
@@ -3134,6 +3159,11 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     }
 
     let data = await interpretate(args[0], env);
+
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+    }    
+    
     let radius = [1, 1]; 
 
     if (args.length > 1) {
@@ -3174,6 +3204,12 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
   g2d.Disk.update = async (args, env) => {
     let data = await interpretate(args[0], env);
+
+    if (data instanceof NumericArrayObject) { // convert back automatically
+      data = data.normal();
+    }
+
+    //console.log(data);
     let radius = env.local.r; 
 
     if (args.length > 1) {
@@ -3372,11 +3408,11 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
   g2d.Point.update = async (args, env) => {
     let data = await interpretate(args[0], env);
+
     if (data instanceof NumericArrayObject) { // convert back automatically
       data = data.normal();
-     }
+    }
     
-
     const dp = arrdims(data);
     if (dp === 0) {
         data = [];
@@ -3896,7 +3932,11 @@ function vectorAngle ([ux, uy], [vx, vy]) {
   }
 
   g2d.Translate.update = async (args, env) => {
-    const pos = await interpretate(args[1], env);
+    let pos = await interpretate(args[1], env);
+
+    if (pos instanceof NumericArrayObject) { // convert back automatically
+      pos = pos.normal();
+    }    
 
     const xAxis = env.xAxis;
     const yAxis = env.yAxis;
@@ -3927,8 +3967,16 @@ function vectorAngle ([ux, uy], [vx, vy]) {
 
 
   g2d.Rectangle = async (args, env) => {
-    const from = await interpretate(args[0], env);
-    const to = await interpretate(args[1], env);
+    let from = await interpretate(args[0], env);
+    let to = await interpretate(args[1], env);
+
+    if (from instanceof NumericArrayObject) { // convert back automatically
+      from = from.normal();
+    }     
+
+    if (to instanceof NumericArrayObject) { // convert back automatically
+      to = to.normal();
+    }  
 
     if (from[1] > to[1]) {
       const t = from[1];
@@ -3998,8 +4046,16 @@ function vectorAngle ([ux, uy], [vx, vy]) {
   //}
   
   g2d.Rectangle.update = async (args, env) => {
-    const from = await interpretate(args[0], env);
-    const to = await interpretate(args[1], env);
+    let from = await interpretate(args[0], env);
+    let to = await interpretate(args[1], env);
+
+    if (from instanceof NumericArrayObject) { // convert back automatically
+      from = from.normal();
+    }     
+
+    if (to instanceof NumericArrayObject) { // convert back automatically
+      to = to.normal();
+    }     
     
     if (from[1] > to[1]) {
       const t = from[1];
