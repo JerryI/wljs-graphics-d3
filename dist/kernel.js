@@ -5053,9 +5053,10 @@ function arrdims(arr) {
     env.offset;
     
     let data = await interpretate(args[0], env);
+    
     if (data instanceof NumericArrayObject) { // convert back automatically
       data = data.normal();
-     }
+    }
     
     const x = env.xAxis;
     const y = env.yAxis;
@@ -5153,6 +5154,7 @@ function arrdims(arr) {
 
   g2d.Line.update = async (args, env) => {
     let data = await interpretate(args[0], env);
+    console.log(data);
 
     if (data instanceof NumericArrayObject) { // convert back automatically
       data = data.normal();
