@@ -4458,6 +4458,7 @@ function arrdims(arr) {
 
   g2d.GraphicsComplex = async (args, env) => {
     const vertices = await interpretate(args[0], env);
+    
     const opts = await core._getRules(args, env);
     const copy = {...env, vertices: vertices, context: [g2dComplex, g2d]};
 
@@ -4633,6 +4634,8 @@ function arrdims(arr) {
   g2d.RGBColor = async (args, env) => {
     let colorCss;
 
+
+
     if (args.length == 3) {
       colorCss = "rgb(";
       colorCss += String(Math.floor(255 * (await interpretate(args[0], env)))) + ",";
@@ -4640,7 +4643,10 @@ function arrdims(arr) {
       colorCss += String(Math.floor(255 * (await interpretate(args[2], env)))) + ")";
 
     } else {
-      const a = await interpretate(args[0], env);
+      let a = await interpretate(args[0], env);
+      if (a instanceof NumericArrayObject) { // convert back automatically
+        a = a.normal();
+       }
       colorCss = "rgb(";
       colorCss += String(Math.floor(255 * a[0])) + ",";
       colorCss += String(Math.floor(255 * a[1])) + ",";
@@ -4672,7 +4678,10 @@ function arrdims(arr) {
       colorCss += String(Math.floor(255 * (await interpretate(args[2], env)))) + ")";
 
     } else {
-      const a = await interpretate(args[0], env);
+      let a = await interpretate(args[0], env);
+      if (a instanceof NumericArrayObject) { // convert back automatically
+        a = a.normal();
+       }
       colorCss = "rgb(";
       colorCss += String(Math.floor(255 * a[0])) + ",";
       colorCss += String(Math.floor(255 * a[1])) + ",";
