@@ -1103,6 +1103,35 @@
 
         
       }
+
+      return env;
+  }
+
+  g2d['Graphics`Serialize'] = async (args, env) => {
+    const opts = await core._getRules(args, env);
+    let dom = env.element;
+
+    if (opts.TemporalDOM) {
+      dom = document.createElement('div');
+      dom.style.pointerEvents = 'none';
+      dom.style.opacity = 0;
+      dom.style.position = 'absolute';
+
+      document.body.appendChild(dom);
+    }
+
+    const senv = await interpretate(args[0], {...env, element: dom});
+    const str = await serialize(senv.element.firstChild).text();
+
+    Object.values(env.global.stack).forEach((el) => {
+      el.dispose();
+    });
+
+    if (opts.TemporalDOM) {
+      dom.remove();
+    }
+
+    return str;
   }
 
   const reScale = (transform, raw, view, gX, gY, gTX, gRY, xAxis, yAxis, txAxis, ryAxis, x, y) => {

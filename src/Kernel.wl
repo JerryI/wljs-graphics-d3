@@ -16,6 +16,8 @@ AnimationFrameListener::usage = "AnimationFrameListener[symbol // Offload, \"Eve
 Graphics`Canvas;
 Graphics`Canvas::usage = "Graphics`Canvas[] represents an SVG canvas of the current context in Graphics"
 
+Graphics`Serialize;
+
 (*Unprotect[Image]
 Options[Image] = Append[Options[Image], Antialiasing->True];*)
 
@@ -38,6 +40,13 @@ Disk       /: EventHandler[p_Disk, list_List] := listener[p, list]
 Graphics`Canvas  /: EventHandler[p_Graphics`Canvas, list_List] := listener[p, list]
 
 Protect[Point, Rectangle, Text, Disk];
+
+(*
+Rasterize[g_Graphics, any___] := With[{svg = FrontFetch[Graphics`Serialize[g, "TemporalDOM"->True] ]},
+    ImportString[svg, "Svg"]
+]
+*)
+
 
 End[]
 EndPackage[]
