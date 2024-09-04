@@ -2548,7 +2548,7 @@ function arrdims(arr) {
   interpretate.contextExpand(g2d);
 
  //polyfill for symbols
- ["FaceForm", "ViewMatrix", "CurrentValue", "FontColor", "Tiny", "VertexColors", "Antialiasing","Small", "Plot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","Full","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
+ ["FaceForm", "ViewMatrix", "CurrentValue", "FontColor", "Tiny", "VertexColors", "Antialiasing","Small", "Plot", "ListCurvePathPlot",  "ListLinePlot", "ListPlot", "Automatic", "Controls","All","TickLabels","FrameTicksStyle", "AlignmentPoint","AspectRatio","Axes","AxesLabel","AxesOrigin","AxesStyle","Background","BaselinePosition","BaseStyle","ColorOutput","ContentSelectable","CoordinatesToolOptions","DisplayFunction","Epilog","FormatType","Frame","FrameLabel","FrameStyle","FrameTicks","FrameTicksStyle","GridLines","GridLinesStyle","ImageMargins","ImagePadding","ImageSize","ImageSizeRaw","Full","LabelStyle","Method","PlotLabel","PlotRange","PlotRangeClipping","PlotRangePadding","PlotRegion","PreserveImageOptions","Prolog","RotateLabel","Ticks","TicksStyle", "TransitionDuration"].map((name)=>{
   g2d[name] = () => name;
   //g2d[name].destroy = () => name;
   g2d[name].update = () => name;
@@ -4058,7 +4058,7 @@ function arrdims(arr) {
      .x(function(d) { return env.xAxis(d[0]) })
      .y(function(d) { return env.yAxis(d[1]) });
 
-  console.warn(path);
+  //console.warn(path);
 
   if (!path[0][0][0] && (typeof path[0][0][0] != 'number')) {
     //console.log('Condtions special');
@@ -5098,6 +5098,7 @@ function arrdims(arr) {
     env.offset;
     
     let data = await interpretate(args[0], env);
+    //(data);
     
     if (data instanceof NumericArrayObject) { // convert back automatically
       data = data.normal();
@@ -5199,6 +5200,7 @@ function arrdims(arr) {
 
   g2d.Line.update = async (args, env) => {
     let data = await interpretate(args[0], env);
+    //console.warn(data);
     //console.log(data);
 
     if (data instanceof NumericArrayObject) { // convert back automatically
