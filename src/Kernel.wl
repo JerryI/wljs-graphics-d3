@@ -18,6 +18,9 @@ Graphics`Canvas::usage = "Graphics`Canvas[] represents an SVG canvas of the curr
 
 Graphics`Serialize;
 
+Graphics`DPR;
+Graphics`DPR::usage = "Returns the client's device pixel ratio. Use inside FrontFetch"
+
 (*Unprotect[Image]
 Options[Image] = Append[Options[Image], Antialiasing->True];*)
 

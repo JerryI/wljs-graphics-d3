@@ -10,6 +10,10 @@
   core['Charting`DateTicksFunction'] = () => 'DateTicksFunction'
   core['DateListPlot'] = () => {}
 
+  core['Graphics`DPR'] = () => {
+    return window.devicePixelRatio;
+  }
+
   function transpose(matrix) {
     let newm = structuredClone(matrix);
     for (var i = 0; i < matrix.length; i++) {

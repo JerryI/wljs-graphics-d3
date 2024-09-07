@@ -2533,6 +2533,10 @@ function arrdims(arr) {
 
   core['Charting`DateTicksFunction'] = () => 'DateTicksFunction';
   core['DateListPlot'] = () => {};
+
+  core['Graphics`DPR'] = () => {
+    return window.devicePixelRatio;
+  };
  
   
   let d3 = false;
