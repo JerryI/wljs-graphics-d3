@@ -1,4 +1,4 @@
-BeginPackage["JerryI`Notebook`Graphics2D`", {"JerryI`Misc`Events`"}]
+BeginPackage["JerryI`Notebook`Graphics2D`", {"JerryI`Misc`Events`", "Notebook`Editor`Kernel`FrontSubmitService`"}]
 
 Controls::usage = "Controls -> True, False is an option for Graphics to use zoom and panning"
 TransitionType::usage = "TransitionType -> \"Linear\", \"CubicInOut\" is an option for Graphics to use smoothening filter for the transitions"
@@ -44,11 +44,13 @@ Graphics`Canvas  /: EventHandler[p_Graphics`Canvas, list_List] := listener[p, li
 
 Protect[Point, Rectangle, Text, Disk];
 
-(*
+Unprotect[Rasterize]
 Rasterize[g_Graphics, any___] := With[{svg = FrontFetch[Graphics`Serialize[g, "TemporalDOM"->True] ]},
     ImportString[svg, "Svg"]
 ]
-*)
+
+
+
 
 
 End[]
