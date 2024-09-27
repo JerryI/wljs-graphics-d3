@@ -1,4 +1,10 @@
-BeginPackage["JerryI`Notebook`Graphics2D`", {"JerryI`Misc`Events`", "Notebook`Editor`Kernel`FrontSubmitService`"}]
+BeginPackage["JerryI`Notebook`Graphics2D`", {
+    "JerryI`Misc`Events`", 
+    "Notebook`Editor`Kernel`FrontSubmitService`", 
+    "Notebook`Editor`FrontendObject`", 
+    "Notebook`Editor`Boxes`",
+    "JerryI`Misc`WLJS`Transport`"
+}]
 
 Controls::usage = "Controls -> True, False is an option for Graphics to use zoom and panning"
 TransitionType::usage = "TransitionType -> \"Linear\", \"CubicInOut\" is an option for Graphics to use smoothening filter for the transitions"
@@ -49,8 +55,52 @@ Rasterize[g_Graphics, any___] := With[{svg = FrontFetch[Graphics`Serialize[g, "T
     ImportString[svg, "Svg"]
 ]
 
+Unprotect[Graphics]
 
+Graphics /: MakeBoxes[System`Dump`g_Graphics?System`Dump`vizGraphicsQ,System`Dump`fmt:StandardForm|TraditionalForm] := If[ByteCount[System`Dump`g] < 2 1024,
+    ViewBox[System`Dump`g, System`Dump`g]
+,
+    With[{fe = CreateFrontEndObject[System`Dump`g]},
+        MakeBoxes[fe, System`Dump`fmt]
+    ]
+]
 
+Graphics /: MakeBoxes[System`Dump`g_Graphics,System`Dump`fmt:StandardForm|TraditionalForm] := If[ByteCount[System`Dump`g] < 2 1024,
+    ViewBox[System`Dump`g, System`Dump`g]
+,
+    With[{fe = CreateFrontEndObject[System`Dump`g]},
+        MakeBoxes[fe, System`Dump`fmt]
+    ]
+]
+
+System`WLXForm;
+
+Graphics /: MakeBoxes[g_Graphics, WLXForm] := With[{fe = CreateFrontEndObject[g]},
+    MakeBoxes[fe, WLXForm]
+]
+
+Unprotect[Image]
+
+Image /: MakeBoxes[Image`ImageDump`img:Image[_,Image`ImageDump`type_,Image`ImageDump`info___],Image`ImageDump`fmt_]/;Image`ValidImageQHold[Image`ImageDump`img] := With[{i=Information[Image`ImageDump`img]},
+    If[ByteCount[Image`ImageDump`img] > 8 1024 1024,
+        BoxForm`ArrangeSummaryBox[Image, Image`ImageDump`img, None, {
+            BoxForm`SummaryItem[{"ObjectType", "Image"}],
+            BoxForm`SummaryItem[{"ColorSpace", i["ColorSpace"]}],
+            BoxForm`SummaryItem[{"Channels", i["Channels"]}],
+            BoxForm`SummaryItem[{"DataType", i["DataType"]}]
+        }, {}]
+    ,
+        With[{fe = CreateFrontEndObject[Image`ImageDump`img]},
+            MakeBoxes[fe, Image`ImageDump`fmt]
+        ]
+    ]
+]
+
+Image /: MakeBoxes[Image`ImageDump`img:Image[_Offload, Image`ImageDump`type_, Image`ImageDump`info___], Image`ImageDump`fmt_] := With[{fe = CreateFrontEndObject[Image`ImageDump`img]},
+
+MakeBoxes[fe, Image`ImageDump`fmt]
+
+]
 
 
 End[]
