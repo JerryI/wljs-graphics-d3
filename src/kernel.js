@@ -851,9 +851,18 @@
         let temp = {...env};
         let value = await interpretate(options.AxesLabel[0], temp);
         if (value != 'None' && gX) {
+          let xoffset = 0;
+          let yoffset = 0;
+
+          if (Array.isArray(value)) {
+            xoffset = value[1][0];
+            yoffset = value[1][1];
+            value = value[0];
+          }
+
           g2d.Text.PutText(gX.append("text")
-          .attr("x", width + temp.offset.x + 10)
-          .attr("y", margin.bottom + temp.offset.y)
+          .attr("x", width + temp.offset.x + 10 + xoffset)
+          .attr("y", margin.bottom + temp.offset.y + yoffset)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "start")
@@ -863,9 +872,18 @@
         temp = {...env};
         value = await interpretate(options.AxesLabel[1], temp);        
         if (value != 'None' && gY) {
+          let xoffset = 0;
+          let yoffset = 0;
+
+          if (Array.isArray(value)) {
+            xoffset = value[1][0];
+            yoffset = value[1][1];
+            value = value[0];
+          }
+
           g2d.Text.PutText(gY.append("text")
-          .attr("x", 0 + temp.offset.x)
-          .attr("y", -margin.top/2 + temp.offset.y)
+          .attr("x", 0 + temp.offset.x + xoffset)
+          .attr("y", -margin.top/2 + temp.offset.y + yoffset)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "start")
@@ -881,6 +899,7 @@
       //throw(options.FrameLabel);
 
       options.FrameLabel = await interpretate(options.FrameLabel, {...env});
+
 
 
 
@@ -904,10 +923,19 @@
         value = lb[0];
 
         if (value != 'None' && gY) {
+          let xoffset = 0;
+          let yoffset = 0;
+
+          if (Array.isArray(value)) {
+            xoffset = value[1][0];
+            yoffset = value[1][1];
+            value = value[0];
+          }
+
           g2d.Text.PutText(gY.append("text")
           .attr("transform", "rotate(-90)")
-          .attr("y", -margin.left + temp.offset.x)
-          .attr("x", -height/2 - temp.offset.y)
+          .attr("y", -margin.left + temp.offset.x + xoffset)
+          .attr("x", -height/2 - temp.offset.y + yoffset)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
@@ -919,10 +947,20 @@
         value = lb[1];
 
         if (value != 'None' && gRY) {
+
+          let xoffset = 0;
+          let yoffset = 0;
+
+          if (Array.isArray(value)) {
+            xoffset = value[1][0];
+            yoffset = value[1][1];
+            value = value[0];
+          }
+
           g2d.Text.PutText(
             gRY.append("text")
-              .attr("x", 0 + temp.offset.x)
-              .attr("y", margin.bottom + temp.offset.y)
+              .attr("x", 0 + temp.offset.x + xoffset)
+              .attr("y", margin.bottom + temp.offset.y + yoffset)
               .attr("font-size", axesstyle.fontsize)
               .attr("fill", axesstyle.color)
               .attr("text-anchor", "middle"),
@@ -937,10 +975,20 @@
         value = rt[1];      
         
         if (value != 'None' && gTX) {
+
+          let xoffset = 0;
+          let yoffset = 0;
+
+          if (Array.isArray(value)) {
+            xoffset = value[1][0];
+            yoffset = value[1][1];
+            value = value[0];
+          }
+
           g2d.Text.PutText(
           gTX.append("text")
-          .attr("x", width/2 + temp.offset.x)
-          .attr("y", margin.bottom + temp.offset.y)
+          .attr("x", width/2 + temp.offset.x + xoffset)
+          .attr("y", margin.bottom + temp.offset.y + yoffset)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
@@ -951,9 +999,19 @@
         value = rt[0];        
 
         if (value != 'None' && gX) {
+
+          let xoffset = 0;
+          let yoffset = 0;
+
+          if (Array.isArray(value)) {
+            xoffset = value[1][0];
+            yoffset = value[1][1];
+            value = value[0];
+          }
+
           g2d.Text.PutText(gX.append("text")
-          .attr("x", width/2 + temp.offset.x)
-          .attr("y", margin.bottom + temp.offset.y)
+          .attr("x", width/2 + temp.offset.x + xoffset)
+          .attr("y", margin.bottom + temp.offset.y + yoffset)
           .attr("font-size", axesstyle.fontsize)
           .attr("fill", axesstyle.color)
           .attr("text-anchor", "middle")
