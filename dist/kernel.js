@@ -2946,9 +2946,9 @@ function arrdims(arr) {
     let svg;
     
     
-    if (env.inset) 
-      svg = env.inset.append("svg");
-    else
+    // if (env.inset) 
+    //   svg = env.inset.append("svg");
+    // else
       svg = d3.select(container).append("svg");
 
 
@@ -3781,70 +3781,81 @@ function arrdims(arr) {
   g2d.Inset = async (args, env) => {
     let pos = [0,0];
     let size; 
+
+    const opts = await core._getRules(args, env);
+    const oLength = Object.keys(opts).length;
     
-    if (args.length > 1) pos = await interpretate(args[1], env);
+    if (args.length - oLength > 1) pos = await interpretate(args[1], env);
     let opos;
 
     if (pos instanceof NumericArrayObject) { // convert back automatically
       pos = pos.normal();
     }
 
-    if (args.length > 2) opos = await interpretate(args[2], env);
-    if (args.length > 3) size = await interpretate(args[3], env);
+    if (args.length - oLength > 2) opos = await interpretate(args[2], env);
+    if (args.length - oLength > 3) size = await interpretate(args[3], env);
 
-    const opts = await core._getRules(args, env);
+    
 
     
 
     const group = env.svg.append('g');
-    const copy = {global: env.global, inset: group};
-   
-    const instance = new ExecutableObject('feinset-'+uuidv4(), copy, args[0]);
-    instance.assignScope(copy);
-  
-    await instance.execute();    
-  
-    env.local.group = group;
-    const bbox = group.node().getBoundingClientRect();
-    if (!opos) {
-      opos = [bbox.width/2, bbox.height/2];
-    }
 
-    console.log(bbox);
-    let scale = 1;
+    const foreignObject = group.append('foreignObject');
+
+    foreignObject.attr('width', 'auto');
+    foreignObject.attr('height', 'auto');
+
+    //const foreignObject = foreignObject.append('xhtml:canvas').attr('xmlns', 'http://www.w3.org/1999/xhtml').node();
+
+    const copy = {global: env.global, inset:true, element: foreignObject.node()};
 
     if (size) {
       if (typeof size === 'number') size = [size, size/1.6];
       size = [Math.abs(env.xAxis(size[0]) - env.xAxis(0)), Math.abs(env.yAxis(size[1]) - env.yAxis(0))];
-      console.log(size);
-      scale = size[0] / bbox.width;
+
+      foreignObject.attr('width', size[0]);
+      foreignObject.attr('height', size[1]);      
+      //copy.imageSize = size;
+    } 
+   
+    //const instance = new ExecutableObject('feinset-'+uuidv4(), copy, args[0]);
+    //instance.assignScope(copy);
+  
+    //await instance.execute();    
+    await interpretate(args[0], copy);
+
+    const child = group.node().firstChild;
+    const box = {width: child.scrollWidth, height: child.scrollHeight};
+
+
+    if (!size) {
+      foreignObject.attr('width', box.width);
+      foreignObject.attr('height', box.height);      
     }
 
-    
+    if ('ViewMatrix' in opts) {
+      if (!opts.ViewMatrix) {
+        foreignObject.attr('x', 0);
+        foreignObject.attr('y', 0); 
 
-    const vbox = group.node().getBBox();
+        return group;
+      }
+    }
 
+    if (!opos) {
+      opos = [box.width/2, box.height/2];
+    } 
 
+    foreignObject.attr('x', env.xAxis(pos[0]) - opos[0])
+                 .attr('y', env.yAxis(pos[1]) - opos[1]);
 
-    const cx = vbox.x + (vbox.width / 2) ;
-    const cy = vbox.y + (vbox.height / 2) ;
-    const zx = cx - scale * cx ;
-    const zy = cy - scale * cy;
+  
+    env.local.foreignObject = foreignObject;
 
-    env.local.bbox = bbox;
     env.local.opos = opos;
-    env.local.scale = scale;
-    env.local.matrix = 'matrix(' + scale + ', 0, 0, ' + scale + ', ' + zx + ', ' + zy + ')';
-
-    const xx =(   env.xAxis(pos[0]) - env.xAxis(0) ) / scale   + (  opos[0]);
-    const yy =  (   env.yAxis(pos[1]) - env.yAxis(0) ) /scale   + (  opos[1]);
-
-    if (opts.ViewMatrix === false) {
-      env.local.matrix = '';
-      return group;
-    }
     
-    return group.attr('transform', env.local.matrix + ' translate(' + xx + ',' + yy + ')');
+    return group;
   };
 
   g2d.Inset.update = async (args, env) => {
@@ -3854,10 +3865,12 @@ function arrdims(arr) {
       pos = pos.normal();
     }
 
-    const xx =(   env.xAxis(pos[0]) - env.xAxis(0) ) / env.local.scale   + (env.local.bbox.width/2 - env.local.opos[0]);
-    const yy =  (   env.yAxis(pos[1]) - env.yAxis(0) ) /env.local.scale   + (env.local.bbox.height/2 - env.local.opos[1]);
+    const opos = env.local.opos;
 
-    return env.local.group.attr('transform', env.local.matrix + ' translate(' + xx + ',' + yy + ')');
+    env.local.foreignObject.attr('x', env.xAxis(pos[0]) - opos[0])
+    .attr('y', env.yAxis(pos[1]) - opos[1]);
+
+    return env.local.foreignObject;
    
   };
 
@@ -7148,24 +7161,24 @@ function vectorAngle ([ux, uy], [vx, vy]) {
     let ctx;
     const dpi = window.devicePixelRatio;
 
-    if (env.inset) {
-      const foreignObject = env.inset.append('foreignObject')
-      .attr('width', target_width)
-      .attr('height', target_height);
+    // if (env.inset) {
+    //   const foreignObject = env.inset.append('foreignObject')
+    //   .attr('width', target_width)
+    //   .attr('height', target_height);
 
 
     
-      const canvas = foreignObject.append('xhtml:canvas')
-      .attr('xmlns', 'http://www.w3.org/1999/xhtml').node();
+    //   const canvas = foreignObject.append('xhtml:canvas')
+    //   .attr('xmlns', 'http://www.w3.org/1999/xhtml').node();
 
-      canvas.width = target_width;
-      canvas.height = target_height;
+    //   canvas.width = target_width;
+    //   canvas.height = target_height;
 
-      canvas.style.width = target_width / dpi + 'px';
-      canvas.style.height = target_height / dpi + 'px';
+    //   canvas.style.width = target_width / dpi + 'px';
+    //   canvas.style.height = target_height / dpi + 'px';
 
-      ctx = canvas.getContext('2d');
-    } else {
+    //   ctx = canvas.getContext('2d');
+    // } else {
       var canvas = document.createElement("canvas");
       canvas.width = target_width;
       canvas.height = target_height;      
@@ -7173,7 +7186,7 @@ function vectorAngle ([ux, uy], [vx, vy]) {
       canvas.style.width = target_width / dpi + 'px';
       canvas.style.height = target_height / dpi + 'px';
       ctx  = canvas.getContext("2d");
-    }
+    //}
 
     env.local.ctx = ctx;
 
