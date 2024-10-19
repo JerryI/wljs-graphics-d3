@@ -2531,6 +2531,8 @@ function arrdims(arr) {
     if (arr[0][0][0].length === undefined)  return 3;
   } 
 
+
+
   core['Charting`DateTicksFunction'] = () => 'DateTicksFunction';
   core['DateListPlot'] = () => {};
 
@@ -2558,6 +2560,8 @@ function arrdims(arr) {
   g2d[name].update = () => name;
   
   });
+
+  g2d.Spacer = () => {};
 
   core.GoldenRatio = () => 1.6180;
 
