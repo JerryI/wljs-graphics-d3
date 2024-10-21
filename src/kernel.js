@@ -250,14 +250,22 @@
       } else {
         if (options.Frame[0][0] === true) framed = true;
         if (options.Frame[0] === true) framed = true;  
+        if (options.Frame[1]) {
+          if (options.Frame[1][0] === true) {
+            framed = false; //TODO: FIXME Dirty HACK for TimeLinePlot to work
+            axis = [true, false];
+          }
+        }
       }
     }
+
+    
     
     if (options.Axes) {
       options.Axes = await interpretate(options.Axes, env);
       if (options.Axes === true) {
         axis = [true, true];
-      } else if (Array.isArray(options.Axes)) {
+      } else if (Array.isArray(options.Axes) && !options.Frame) { //TODO: FIXME Dirty HACK for TimeLinePlot to work
         axis = options.Axes;
 
       }
@@ -267,6 +275,8 @@
       invertedTicks = true;
       axis = [true, true, true, true];
     }
+    
+    
 
     
 
@@ -377,6 +387,7 @@
       margin.left = 30;
       margin.right = 40;
       margin.top = 30;
+      //padding.top = 10;
 
       padding.bottom = 10;
       margin.bottom = 35;
@@ -561,6 +572,7 @@
 
     console.log(axis);
     
+    
     if (ticks) {
       if (!ticks[0]) {
         xAxis = xAxis.tickValues([]);
@@ -595,7 +607,9 @@
         } else if (ticks[0] === true) {
           console.log('Default ticks');
         } else if (Array.isArray(ticks[0][0])) {
+          
           const labels = ticks[0].map((el) => el[1]);
+     
           xAxis = xAxis.tickValues(ticks[0].map((el) => el[0])).tickFormat(function (d, i) {
             return labels[i];
           });
@@ -648,6 +662,7 @@
       }    
     }
 
+    //throw tickLabels;
 
     if (!tickLabels[0]) xAxis = xAxis.tickFormat(x => ``);
     if (!tickLabels[1]) txAxis = txAxis.tickFormat(x => ``);
@@ -771,7 +786,7 @@
 
     
 
-
+    //throw ticks;
 
     env.context = g2d;
     env.svg = svg.append("g")
@@ -790,7 +805,7 @@
     env.fontsize = 10;
     env.fontfamily = 'sans-serif';
     env.strokeWidth = 1.5;
-    env.pointSize = 0.013;
+    env.pointSize = 0.023;
     env.arrowHead = 1.0;
     env.onZoom = [];
     env.transitionDuration = 50;
@@ -820,6 +835,7 @@
 
 
     
+   
 
     if (axis[0]) gX = svg.append("g").attr("transform", "translate(0," + height + ")").call(xAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
     if (axis[2]) gTX = svg.append("g").attr("transform", "translate(0," + 0 + ")").call(txAxis).attr('font-size', ticksstyle.fontsize).attr('fill', ticksstyle.color);
@@ -2150,6 +2166,11 @@
     return await interpretate(args[0], env);
   }
 
+  g2d.Invisible = async (args, env) => {
+    const group = env.svg.append("g");
+    group.attr('style', 'visibility:hidden');
+    return await interpretate(args[0], {...env, svg: group});
+  } 
 
   //g2d.GraphicsGroup.destroy = async (args, env) => {
     //await interpretate(args[0], env);
