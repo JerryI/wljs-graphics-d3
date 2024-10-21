@@ -252,7 +252,7 @@
         if (options.Frame[0] === true) framed = true;  
         if (options.Frame[1]) {
           if (options.Frame[1][0] === true) {
-            framed = false; //TODO: FIXME Dirty HACK for TimeLinePlot to work
+            //framed = false; //TODO: FIXME Dirty HACK for TimeLinePlot to work
             axis = [true, false];
           }
         }
@@ -265,11 +265,14 @@
       options.Axes = await interpretate(options.Axes, env);
       if (options.Axes === true) {
         axis = [true, true];
-      } else if (Array.isArray(options.Axes) && !options.Frame) { //TODO: FIXME Dirty HACK for TimeLinePlot to work
-        axis = options.Axes;
+      } else if (Array.isArray(options.Axes)) { //TODO: FIXME Dirty HACK for TimeLinePlot to work
+        
+        //if (!options.Frame || (axis[0] && axis[1]))
+          axis = options.Axes;
 
       }
     }  
+
 
     if (framed) {
       invertedTicks = true;
@@ -342,6 +345,20 @@
 
 
 
+    if (options.FrameTicks) {
+      if (options.FrameTicks[2][1]) {
+        let t = options.FrameTicks[2][1];
+        if (Array.isArray(t)) {
+          t = t[1];
+          if (Array.isArray(t)) {
+            if (t[0] == 'Charting`getDateTicks') {
+              framed = false;
+              axis = [true, false]; //A hack for timelineplot
+            }
+          }
+        }
+      }
+    }
     
     
     if (options.TickDirection) {
