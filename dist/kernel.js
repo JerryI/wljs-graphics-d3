@@ -2858,6 +2858,7 @@ function arrdims(arr) {
 
 
     if (options.FrameTicks) {
+      if (options.FrameTicks[2])
       if (options.FrameTicks[2][1]) {
         let t = options.FrameTicks[2][1];
         if (Array.isArray(t)) {
@@ -2865,7 +2866,7 @@ function arrdims(arr) {
           if (Array.isArray(t)) {
             if (t[0] == 'Charting`getDateTicks') {
               framed = false;
-              axis = [true, false];
+              axis = [true, false]; //A hack for timelineplot
             }
           }
         }

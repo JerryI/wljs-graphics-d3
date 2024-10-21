@@ -346,6 +346,7 @@
 
 
     if (options.FrameTicks) {
+      if (options.FrameTicks[2])
       if (options.FrameTicks[2][1]) {
         let t = options.FrameTicks[2][1];
         if (Array.isArray(t)) {
